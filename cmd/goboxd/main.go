@@ -6,11 +6,19 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+
+	"github.com/thesouldev/goboxd/internal/config"
 )
 
 func main() {
 	port := flag.Int("port", 8080, "port to listen on")
 	flag.Parse()
+
+	cfg, err := config.Load("languages.yaml")
+	if err != nil {
+		log.Fatalf("failed to load config: %v", err)
+	}
+	_ = cfg // For now, we just need to load it.
 
 	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
