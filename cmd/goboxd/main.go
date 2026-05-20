@@ -13,10 +13,11 @@ import (
 )
 
 func main() {
-	port := flag.Int("port", 8080, "port to listen on")
+	port := flag.Int("port", 8080, "Port to listen on")
+	configPath := flag.String("config", "languages.yaml", "path to languages.yaml")
 	flag.Parse()
 
-	cfg, err := config.Load("languages.yaml")
+	cfg, err := config.Load(*configPath)
 	if err != nil {
 		log.Fatalf("failed to load config: %v", err)
 	}

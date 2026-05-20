@@ -51,8 +51,14 @@ func Run(lang config.Language, req RunRequest) RunResult {
 	results := make([]TestResult, 0, len(req.Tests))
 	overallStatus := "accepted"
 
+	vars := map[string]string{
+		"source":   "/sandbox/" + lang.SourceFilename,
+		"artifact": "/sandbox/" + lang.Artifact,
+	}
+	runArgs := resolveArgs(lang.Run.Args, vars)
+
 	for _, tc := range req.Tests {
-		res := runTestCase(lang, sourcePath, tc)
+		res := runTestCase(lang, workdir, runArgs, tc)
 		results = append(results, res)
 		if res.Status != "accepted" && overallStatus == "accepted" {
 			overallStatus = res.Status // Set first failing status
@@ -65,11 +71,12 @@ func Run(lang config.Language, req RunRequest) RunResult {
 	}
 }
 
-func runTestCase(lang config.Language, sourcePath string, tc TestCase) TestResult {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(lang.Run.Limits.WallTimeS)*time.Second)
+func runTestCase(lang config.Language, workdir string, runArgs []string, tc TestCase) TestResult {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(lang.Run.Limits.WallTimeS+1)*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "/usr/bin/python3", sourcePath)
+	nsjailArgs := buildNsjailArgs(lang, workdir, lang.Run.Cmd, runArgs)
+	cmd := exec.CommandContext(ctx, nsjailPath, nsjailArgs...)
 	
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
@@ -131,4 +138,15 @@ func runTestCase(lang config.Language, sourcePath string, tc TestCase) TestResul
 		Stderr:     stderr.String(),
 		DurationMs: duration,
 	}
+}
+
+func resolveArgs(args []string, vars map[string]string) []string {
+	out := make([]string, len(args))
+	for i, a := range args {
+		for k, v := range vars {
+			a = strings.ReplaceAll(a, "{{"+k+"}}", v)
+		}
+		out[i] = a
+	}
+	return out
 }
