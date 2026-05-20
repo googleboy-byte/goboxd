@@ -20,30 +20,35 @@ func TestRunHelloWorld(t *testing.T) {
 		},
 	}
 
-	req := runner.RunRequest{
-		Source: "print('hello world')",
-		Tests: []runner.TestCase{
-			{
-				Stdin:          "",
-				ExpectedOutput: "hello world",
+	t.Run("Accepted on literal match", func(t *testing.T) {
+		req := runner.RunRequest{
+			Source: "print('hello world', end='')",
+			Tests: []runner.TestCase{
+				{
+					Stdin:          "",
+					ExpectedOutput: "hello world", // literal match
+				},
 			},
-		},
-	}
-
-	res := runner.Run(lang, req)
-
-	if res.Status != "accepted" {
-		t.Errorf("expected status accepted, got %s", res.Status)
-		for _, tr := range res.TestResults {
-			t.Logf("Test Status: %s, Output: %q, Error: %q", tr.Status, tr.Output, tr.Error)
 		}
-	}
+		res := runner.Run(lang, req)
+		if res.Status != "accepted" {
+			t.Errorf("expected status accepted, got %s", res.Status)
+		}
+	})
 
-	if len(res.TestResults) != 1 {
-		t.Fatalf("expected 1 test result, got %d", len(res.TestResults))
-	}
-
-	if res.TestResults[0].Status != "accepted" {
-		t.Errorf("expected test result status accepted, got %s", res.TestResults[0].Status)
-	}
+	t.Run("Output whitespace mismatch", func(t *testing.T) {
+		req := runner.RunRequest{
+			Source: "print('hello world')",
+			Tests: []runner.TestCase{
+				{
+					Stdin:          "",
+					ExpectedOutput: "hello world", // mismatch because print adds \n
+				},
+			},
+		}
+		res := runner.Run(lang, req)
+		if res.Status != "output_whitespace_mismatch" {
+			t.Errorf("expected status output_whitespace_mismatch, got %s", res.Status)
+		}
+	})
 }

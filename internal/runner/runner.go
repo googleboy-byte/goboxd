@@ -24,9 +24,11 @@ type RunRequest struct {
 }
 
 type TestResult struct {
-	Status string `json:"status"` // accepted, wrong_answer, time_limit_exceeded, runtime_error
-	Output string `json:"output"`
-	Error  string `json:"error,omitempty"`
+	Status       string `json:"status"`
+	Stdout       string `json:"stdout"`
+	Stderr       string `json:"stderr"`
+	DurationMs   int64  `json:"duration_ms"`
+	MemoryPeakKB int64  `json:"memory_peak_kb"`
 }
 
 type RunResult struct {
@@ -71,35 +73,62 @@ func runTestCase(lang config.Language, sourcePath string, tc TestCase) TestResul
 	
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
-		return TestResult{Status: "runtime_error", Error: err.Error()}
+		return TestResult{Status: "internal_error"}
+	}
+	stderrPipe, err := cmd.StderrPipe()
+	if err != nil {
+		return TestResult{Status: "internal_error"}
 	}
 
 	cmd.Stdin = bytes.NewBufferString(tc.Stdin)
 
+	start := time.Now()
 	if err := cmd.Start(); err != nil {
-		return TestResult{Status: "runtime_error", Error: err.Error()}
+		return TestResult{Status: "runtime_error"}
 	}
 
-	var stdout bytes.Buffer
-	_, err = io.Copy(&stdout, io.LimitReader(stdoutPipe, 1024*64))
-	
-	// We still need to call Wait to clean up the process
+	var stdout, stderr bytes.Buffer
+	stdoutDone := make(chan struct{})
+	stderrDone := make(chan struct{})
+
+	go func() {
+		io.Copy(&stdout, io.LimitReader(stdoutPipe, 1024*64))
+		stdoutDone <- struct{}{}
+	}()
+	go func() {
+		io.Copy(&stderr, io.LimitReader(stderrPipe, 1024*64))
+		stderrDone <- struct{}{}
+	}()
+
+	<-stdoutDone
+	<-stderrDone
 	waitErr := cmd.Wait()
+	duration := time.Since(start).Milliseconds()
 
 	if ctx.Err() == context.DeadlineExceeded {
-		return TestResult{Status: "time_exceeded"}
+		return TestResult{Status: "time_exceeded", DurationMs: duration}
 	}
 
+	status := "accepted"
 	if waitErr != nil {
-		return TestResult{Status: "runtime_error", Error: waitErr.Error()}
+		status = "runtime_error"
+	} else {
+		actual := stdout.String()
+		expected := tc.ExpectedOutput
+
+		if actual == expected {
+			status = "accepted"
+		} else if strings.TrimSpace(actual) == strings.TrimSpace(expected) {
+			status = "output_whitespace_mismatch"
+		} else {
+			status = "wrong_output"
+		}
 	}
 
-	actualOutput := strings.TrimSpace(stdout.String())
-	expectedOutput := strings.TrimSpace(tc.ExpectedOutput)
-
-	if actualOutput != expectedOutput {
-		return TestResult{Status: "wrong_output", Output: actualOutput}
+	return TestResult{
+		Status:     status,
+		Stdout:     stdout.String(),
+		Stderr:     stderr.String(),
+		DurationMs: duration,
 	}
-
-	return TestResult{Status: "accepted", Output: actualOutput}
 }
