@@ -121,3 +121,56 @@ curl -s -X POST -H "Content-Type: application/json" -d '{
 ```json
 {"status":"build_failed","build":{"status":"failed","stdout":"","stderr":"error: expected one of `!`, `.`, `::`, `;`, `?`, `{`, `}`, or an operator, found `code`...","duration_ms":53},"tests":[{"status":"not_executed","stdout":"","stderr":"","duration_ms":0,"memory_peak_kb":0}]}
 ```
+
+## Service Diagnostics (/info)
+
+### [SUCCESS] Complete Service Info
+**Request:**
+```bash
+curl -s http://localhost:8080/info | jq .
+```
+**Response:**
+```json
+{
+  "build_info": { "version": "0.1.0", "commit": "4248131", "go_version": "go1.23.0" },
+  "nsjail": { "path": "/usr/sbin/nsjail", "version": "3.4" },
+  "languages": [
+    {
+      "id": "py3",
+      "name": "Python 3",
+      "version": "Python 3.11.2",
+      "default_run_limits": { "wall_time_s": 9, "memory_kb": 102400, "max_processes": 100 }
+    },
+    {
+      "id": "cpp",
+      "name": "C++",
+      "version": "g++ (Debian 12.2.0-14+deb12u1) 12.2.0",
+      "default_run_limits": { "wall_time_s": 3, "memory_kb": 524288, "max_processes": 64 }
+    },
+    {
+      "id": "bash",
+      "name": "Bash",
+      "version": "GNU bash, version 5.2.15(1)-release (x86_64-pc-linux-gnu)",
+      "default_run_limits": { "wall_time_s": 2, "memory_kb": 51200, "max_processes": 10 }
+    },
+    {
+      "id": "rust",
+      "name": "Rust",
+      "version": "rustc 1.63.0",
+      "default_run_limits": { "wall_time_s": 2, "memory_kb": 102400, "max_processes": 10 }
+    }
+  ],
+  "limits": {
+    "max_source_bytes": 262144,
+    "max_tests": 50,
+    "max_concurrent_jobs": 4
+  },
+  "stats": {
+    "in_flight_jobs": 0,
+    "jobs_total": 0,
+    "jobs_failed_internal": 0,
+    "last_internal_error_at": null,
+    "disk_free_bytes_jail_dir": 12685746176
+  }
+}
+```

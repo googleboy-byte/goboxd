@@ -6,7 +6,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN go build -o goboxd ./cmd/goboxd
+RUN go build -ldflags "-X main.version=0.1.0 -X main.commit=$(git rev-parse --short HEAD)" -o goboxd ./cmd/goboxd
 
 FROM debian:bookworm-slim AS nsjail-builder
 

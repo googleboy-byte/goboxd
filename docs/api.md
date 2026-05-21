@@ -106,17 +106,53 @@ Readiness check. Ensures that the sandboxing environment and all language toolch
     "version": "3.4"
   },
   "languages": {
+    "bash": { "ok": true, "version": "GNU bash, version 5.2.15(1)-release (x86_64-pc-linux-gnu)" },
+    "cpp": { "ok": true, "version": "g++ (Debian 12.2.0-14+deb12u1) 12.2.0" },
     "py3": { "ok": true, "version": "Python 3.11.2" },
-    "cpp": { "ok": true, "version": "g++ (Debian 12.2.0-14+deb12u1) 12.2.0" }
+    "rust": { "ok": true, "version": "rustc 1.63.0" }
   }
 }
 ```
 
-> [!NOTE]
-> The `nsjail` version may be hardcoded (e.g., "3.4") as a fallback if the underlying binary does not support the `--version` flag.
-
 ---
 
-### `GET /info` (NOT YET IMPLEMENTED)
-Service information.
-**Intended Behavior:** Returns versions, registered languages, configured limits, and runtime statistics.
+### `GET /info`
+Service information and diagnostic metrics.
+
+**Method:** `GET`  
+**Path:** `/info`
+
+#### Response Body (200 OK)
+```json
+{
+  "build_info": {
+    "version": "0.1.0",
+    "commit": "4248131",
+    "go_version": "go1.23.0"
+  },
+  "nsjail": {
+    "path": "/usr/sbin/nsjail",
+    "version": "3.4"
+  },
+  "languages": [
+    {
+      "id": "py3",
+      "name": "Python 3",
+      "version": "Python 3.11.2",
+      "default_run_limits": { "wall_time_s": 9, "memory_kb": 102400, "max_processes": 100 }
+    }
+  ],
+  "limits": {
+    "max_source_bytes": 262144,
+    "max_tests": 50,
+    "max_concurrent_jobs": 4
+  },
+  "stats": {
+    "in_flight_jobs": 0,
+    "jobs_total": 150,
+    "jobs_failed_internal": 2,
+    "last_internal_error_at": "2026-05-21T16:50:00Z",
+    "disk_free_bytes_jail_dir": 12685746176
+  }
+}
+```

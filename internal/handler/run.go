@@ -6,7 +6,9 @@ import (
 
 	"github.com/thesouldev/goboxd/internal/config"
 	"github.com/thesouldev/goboxd/internal/runner"
+	"github.com/thesouldev/goboxd/internal/stats"
 	"github.com/thesouldev/goboxd/internal/validate"
+	"time"
 )
 
 type ConfigOverride struct {
@@ -44,8 +46,12 @@ type ErrorResponse struct {
 	} `json:"error"`
 }
 
-func NewRunHandler(cfg *config.Config) http.HandlerFunc {
+func NewRunHandler(cfg *config.Config, s *stats.Stats) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		s.JobsTotal.Add(1)
+		s.InFlight.Add(1)
+		defer s.InFlight.Add(-1)
+
 		r.Body = http.MaxBytesReader(w, r.Body, 256*1024)
 
 		var req Request
@@ -111,6 +117,12 @@ func NewRunHandler(cfg *config.Config) http.HandlerFunc {
 		resp := Response{
 			Status: runResult.Status,
 			Tests:  runResult.TestResults,
+		}
+
+		if runResult.Status == "internal_error" {
+			s.JobsFailedInternal.Add(1)
+			now := time.Now()
+			s.LastInternalErrAt.Store(&now)
 		}
 
 		if runResult.Build != nil {
