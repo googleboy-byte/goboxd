@@ -31,8 +31,11 @@ integration:
 	bash tests/integration/run_all.sh $(SERVER_URL)
 
 load:
-	@echo "Running load tests..."
-	@curl -s -o /dev/null --connect-timeout 2 $(SERVER_URL)/healthz || (echo "Error: Server is not running at $(SERVER_URL). Run 'make run' first." && exit 1)
+	@curl -s -o /dev/null --connect-timeout 2 $(SERVER_URL)/healthz || (echo "Error: Server is not running. Run 'make run' first." && exit 1)
+	@if ! command -v hey >/dev/null 2>&1; then \
+		echo "hey not found. Install with: go install github.com/rakyll/hey@latest"; \
+		exit 1; \
+	fi
 	bash tests/load/load.sh $(SERVER_URL)
 
 lint:

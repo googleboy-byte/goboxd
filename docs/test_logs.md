@@ -174,3 +174,45 @@ curl -s http://localhost:8080/info | jq .
   }
 }
 ```
+# Test Logs
+
+## Load Test Results - 2026-05-21 17:57:10 (IST)
+
+```
+--- Concurrency 1 ---
+
+Summary:
+  Total:        3.3369 secs
+  Slowest:      0.0333 secs
+  Fastest:      0.0148 secs
+  Average:      0.0167 secs
+  Requests/sec: 59.9351
+
+--- Concurrency 10 ---
+
+Summary:
+  Total:        1.3219 secs
+  Slowest:      0.1478 secs
+  Fastest:      0.0176 secs
+  Average:      0.0619 secs
+  Requests/sec: 151.3026
+
+--- Concurrency 50 ---
+
+Summary:
+  Total:        1.3322 secs
+  Slowest:      0.9586 secs
+  Fastest:      0.0212 secs
+  Average:      0.2726 secs
+  Requests/sec: 150.1284
+
+--- Concurrency 100 ---
+
+Summary:
+  Total:        1.4306 secs
+  Slowest:      1.3500 secs
+  Fastest:      0.0326 secs
+  Average:      0.5266 secs
+  Requests/sec: 139.8051
+
+```
