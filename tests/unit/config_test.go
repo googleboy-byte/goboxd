@@ -82,4 +82,30 @@ languages:
 			t.Error("expected error for bad YAML, got nil")
 		}
 	})
+
+	t.Run("Empty languages list returns an error", func(t *testing.T) {
+		emptyContent := "languages: []"
+		emptyTmpfile, _ := os.CreateTemp("", "empty_languages.yaml")
+		defer os.Remove(emptyTmpfile.Name())
+		emptyTmpfile.Write([]byte(emptyContent))
+		emptyTmpfile.Close()
+
+		_, err := config.Load(emptyTmpfile.Name())
+		if err == nil {
+			t.Error("expected error for empty languages list, got nil")
+		}
+	})
+
+	t.Run("Language missing ID returns an error", func(t *testing.T) {
+		missingIDContent := "languages: [{name: 'broken'}]"
+		missingIDTmpfile, _ := os.CreateTemp("", "missing_id_languages.yaml")
+		defer os.Remove(missingIDTmpfile.Name())
+		missingIDTmpfile.Write([]byte(missingIDContent))
+		missingIDTmpfile.Close()
+
+		_, err := config.Load(missingIDTmpfile.Name())
+		if err == nil {
+			t.Error("expected error for language missing ID, got nil")
+		}
+	})
 }

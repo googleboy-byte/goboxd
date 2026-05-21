@@ -81,8 +81,8 @@ func Run(lang config.Language, req RunRequest) RunResult {
 		"source":   "/sandbox/" + lang.SourceFilename,
 		"artifact": lang.Artifact,
 	}
-	runCmd := resolveString(lang.Run.Cmd, vars)
-	runArgs := resolveArgs(lang.Run.Args, vars)
+	runCmd := ResolveString(lang.Run.Cmd, vars)
+	runArgs := ResolveArgs(lang.Run.Args, vars)
 
 	for _, tc := range req.Tests {
 		res := runTestCase(lang, workdir, runCmd, runArgs, tc)
@@ -105,7 +105,7 @@ func buildArtifact(lang config.Language, workdir string, extraFlags []string) Bu
 		"artifact": "/sandbox/" + lang.Artifact,
 		"flags":    "",
 	}
-	resolved := resolveArgs(lang.Build.Args, vars)
+	resolved := ResolveArgs(lang.Build.Args, vars)
 	finalArgs := make([]string, 0, len(resolved)+len(extraFlags))
 	finalArgs = append(finalArgs, extraFlags...)
 	for _, arg := range resolved {
@@ -117,7 +117,7 @@ func buildArtifact(lang config.Language, workdir string, extraFlags []string) Bu
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(lang.Build.Limits.WallTimeS+1)*time.Second)
 	defer cancel()
 
-	buildCmd := resolveString(lang.Build.Cmd, vars)
+	buildCmd := ResolveString(lang.Build.Cmd, vars)
 	nsjailArgs := buildNsjailArgsBuild(lang, workdir, buildCmd, finalArgs)
 	cmd := exec.CommandContext(ctx, nsjailPath, nsjailArgs...)
 
@@ -211,15 +211,15 @@ func runTestCase(lang config.Language, workdir string, runCmd string, runArgs []
 	}
 }
 
-func resolveArgs(args []string, vars map[string]string) []string {
+func ResolveArgs(args []string, vars map[string]string) []string {
 	out := make([]string, len(args))
 	for i, a := range args {
-		out[i] = resolveString(a, vars)
+		out[i] = ResolveString(a, vars)
 	}
 	return out
 }
 
-func resolveString(s string, vars map[string]string) string {
+func ResolveString(s string, vars map[string]string) string {
 	for k, v := range vars {
 		s = strings.ReplaceAll(s, "{{"+k+"}}", v)
 	}

@@ -63,6 +63,9 @@ func ValidateRunRequest(langId string, source string, testCount int, sourceLimit
 	if len(source) > sourceLimit {
 		return fmt.Errorf("%w: source exceeds size limit", ErrBadRequest)
 	}
+	if testCount < 1 {
+		return fmt.Errorf("%w: at least one test required", ErrBadRequest)
+	}
 	if testCount > testLimit {
 		return fmt.Errorf("%w: test count exceeds limit", ErrBadRequest)
 	}

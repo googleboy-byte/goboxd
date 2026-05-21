@@ -68,8 +68,8 @@ func NewRunHandler(cfg *config.Config, s *stats.Stats) http.HandlerFunc {
 		}
 
 		// 2. Validation
-		if req.Source == "" {
-			sendError(w, "invalid_source", "source is required")
+		if err := validate.ValidateRunRequest(req.Language, req.Source, len(req.Tests), 256*1024, 50); err != nil {
+			sendError(w, "bad_request", err.Error())
 			return
 		}
 

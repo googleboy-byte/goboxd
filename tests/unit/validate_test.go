@@ -49,11 +49,16 @@ func TestValidateFlags(t *testing.T) {
 		{"All allowed", []string{"-std=c++17", "-O2", "-Wall"}, nil},
 		{"Not allowed", []string{"-fplugin=evil.so"}, validate.ErrInvalidFlag},
 		{"Mixed", []string{"-Wall", "-fplugin=evil.so"}, validate.ErrInvalidFlag},
+		{"Empty allowlist", []string{"-Wall"}, validate.ErrInvalidFlag},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validate.ValidateFlags(tt.input, allowlist)
+			al := allowlist
+			if tt.name == "Empty allowlist" {
+				al = []string{}
+			}
+			err := validate.ValidateFlags(tt.input, al)
 			if tt.wantErr != nil {
 				if !errors.Is(err, tt.wantErr) {
 					t.Errorf("expected error %v, got %v", tt.wantErr, err)
@@ -78,6 +83,7 @@ func TestValidateRunRequest(t *testing.T) {
 		{"Empty source", "py3", "", 10, validate.ErrBadRequest},
 		{"Too much source", "py3", "this source is definitely longer than twenty characters", 10, validate.ErrBadRequest},
 		{"Too many tests", "py3", "print('hello')", 200, validate.ErrBadRequest},
+		{"Zero tests", "py3", "print('hello')", 0, validate.ErrBadRequest},
 	}
 
 	sourceLimit := 20 // enough for happy path
