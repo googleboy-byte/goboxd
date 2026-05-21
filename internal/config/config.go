@@ -3,16 +3,19 @@ package config
 import (
 	"fmt"
 	"os"
+	"runtime"
 
 	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
-	Languages map[string]Language
+	Languages         map[string]Language
+	MaxConcurrentJobs int
 }
 
 type yamlRoot struct {
-	Languages []Language `yaml:"languages"`
+	Languages         []Language `yaml:"languages"`
+	MaxConcurrentJobs int        `yaml:"max_concurrent_jobs"`
 }
 
 func Load(path string) (*Config, error) {
@@ -30,8 +33,14 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("no languages defined in config")
 	}
 
+	maxJobs := root.MaxConcurrentJobs
+	if maxJobs <= 0 {
+		maxJobs = runtime.NumCPU()
+	}
+
 	cfg := &Config{
-		Languages: make(map[string]Language, len(root.Languages)),
+		Languages:         make(map[string]Language, len(root.Languages)),
+		MaxConcurrentJobs: maxJobs,
 	}
 	for _, lang := range root.Languages {
 		if lang.ID == "" {

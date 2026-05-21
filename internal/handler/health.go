@@ -160,7 +160,7 @@ func (h *HealthHandler) Info(w http.ResponseWriter, r *http.Request) {
 	resp.Limits = LimitsInfo{
 		MaxSourceBytes:    262144,
 		MaxTests:          50,
-		MaxConcurrentJobs: runtime.NumCPU(),
+		MaxConcurrentJobs: h.Config.MaxConcurrentJobs,
 	}
 
 	var stat syscall.Statfs_t

@@ -176,43 +176,33 @@ curl -s http://localhost:8080/info | jq .
 ```
 # Test Logs
 
-## Load Test Results - 2026-05-21 17:57:10 (IST)
+
+## Load Test Results (Queue Active) - 2026-05-21 18:38:11 (IST)
 
 ```
 --- Concurrency 1 ---
-
 Summary:
-  Total:        3.3369 secs
-  Slowest:      0.0333 secs
-  Fastest:      0.0148 secs
-  Average:      0.0167 secs
-  Requests/sec: 59.9351
+  Total:        4.8621 secs
+  Average:      0.0243 secs
+  Requests/sec: 41.1347
 
 --- Concurrency 10 ---
-
 Summary:
-  Total:        1.3219 secs
-  Slowest:      0.1478 secs
-  Fastest:      0.0176 secs
-  Average:      0.0619 secs
-  Requests/sec: 151.3026
+  Total:        2.3371 secs
+  Average:      0.1130 secs
+  Requests/sec: 85.5773
 
 --- Concurrency 50 ---
-
 Summary:
-  Total:        1.3322 secs
-  Slowest:      0.9586 secs
-  Fastest:      0.0212 secs
-  Average:      0.2726 secs
-  Requests/sec: 150.1284
+  Total:        1.9776 secs
+  Average:      0.4062 secs
+  Requests/sec: 101.1310
 
 --- Concurrency 100 ---
-
 Summary:
-  Total:        1.4306 secs
-  Slowest:      1.3500 secs
-  Fastest:      0.0326 secs
-  Average:      0.5266 secs
-  Requests/sec: 139.8051
+  Total:        1.9393 secs
+  Average:      0.7075 secs
+  Requests/sec: 103.1284
 
+[200] 200 responses across all levels. Zero failures.
 ```

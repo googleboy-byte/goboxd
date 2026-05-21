@@ -47,10 +47,23 @@ type ErrorResponse struct {
 }
 
 func NewRunHandler(cfg *config.Config, s *stats.Stats) http.HandlerFunc {
+	sem := make(chan struct{}, cfg.MaxConcurrentJobs)
 	return func(w http.ResponseWriter, r *http.Request) {
 		s.JobsTotal.Add(1)
+
+		// 1. Queueing
+		select {
+		case sem <- struct{}{}:
+			// Acquired slot
+		case <-r.Context().Done():
+			return
+		}
+
 		s.InFlight.Add(1)
-		defer s.InFlight.Add(-1)
+		defer func() {
+			s.InFlight.Add(-1)
+			<-sem
+		}()
 
 		r.Body = http.MaxBytesReader(w, r.Body, 256*1024)
 
