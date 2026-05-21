@@ -125,7 +125,13 @@ func NewRunHandler(cfg *config.Config, s *stats.Stats) http.HandlerFunc {
 			}
 		}
 
+		var runFlags []string
 		if req.Run != nil {
+			if err := validate.ValidateFlags(req.Run.Flags, lang.Run.FlagAllowlist); err != nil {
+				sendError(w, "disallowed_flag", err.Error())
+				return
+			}
+			runFlags = req.Run.Flags
 			if req.Run.Limits != nil {
 				// Deep copy Run (embedded in lang)
 				lang.Run.Limits = *req.Run.Limits
@@ -143,6 +149,7 @@ func NewRunHandler(cfg *config.Config, s *stats.Stats) http.HandlerFunc {
 			Source:     req.Source,
 			Tests:      req.Tests,
 			BuildFlags: buildFlags,
+			RunFlags:   runFlags,
 		}
 
 		runResult := runner.Run(lang, runReq)

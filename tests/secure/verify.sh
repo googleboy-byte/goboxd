@@ -42,9 +42,23 @@ STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: applic
   "tests":[{"stdin":"","expected_stdout":""}]
 }' $SERVER_URL/run)
 if [ "$STATUS" -eq 400 ]; then
-  echo "  PASS: Rejected disallowed flag"
+  echo "  PASS: Rejected disallowed build flag"
 else
-  echo "  FAIL: Received $STATUS for disallowed flag"
+  echo "  FAIL: Received $STATUS for disallowed build flag"
+  exit 1
+fi
+
+echo "[Hole 3] Run Flag Injection..."
+STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '{
+  "language":"py3",
+  "source":"print(1)",
+  "run":{"flags":["-E"]},
+  "tests":[{"stdin":"","expected_stdout":"1\n"}]
+}' $SERVER_URL/run)
+if [ "$STATUS" -eq 400 ]; then
+  echo "  PASS: Rejected disallowed run flag"
+else
+  echo "  FAIL: Received $STATUS for disallowed run flag"
   exit 1
 fi
 

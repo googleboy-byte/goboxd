@@ -19,9 +19,10 @@ type TestCase struct {
 }
 
 type RunRequest struct {
-	Source     string      `json:"source"`
-	Tests      []TestCase  `json:"tests"`
-	BuildFlags []string    `json:"build_flags"`
+	Source     string     `json:"source"`
+	Tests      []TestCase `json:"tests"`
+	BuildFlags []string   `json:"build_flags"`
+	RunFlags   []string   `json:"run_flags"`
 }
 
 type BuildResult struct {
@@ -85,7 +86,7 @@ func Run(lang config.Language, req RunRequest) RunResult {
 	runArgs := ResolveArgs(lang.Run.Args, vars)
 
 	for _, tc := range req.Tests {
-		res := runTestCase(lang, workdir, runCmd, runArgs, tc)
+		res := runTestCase(lang, workdir, runCmd, runArgs, req.RunFlags, tc)
 		results = append(results, res)
 		if res.Status != "accepted" && overallStatus == "accepted" {
 			overallStatus = res.Status // Set first failing status
@@ -142,11 +143,15 @@ func buildArtifact(lang config.Language, workdir string, extraFlags []string) Bu
 	}
 }
 
-func runTestCase(lang config.Language, workdir string, runCmd string, runArgs []string, tc TestCase) TestResult {
+func runTestCase(lang config.Language, workdir string, runCmd string, runArgs []string, extraFlags []string, tc TestCase) TestResult {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(lang.Run.Limits.WallTimeS+1)*time.Second)
 	defer cancel()
 
-	nsjailArgs := buildNsjailArgs(lang, workdir, runCmd, runArgs)
+	finalArgs := make([]string, 0, len(runArgs)+len(extraFlags))
+	finalArgs = append(finalArgs, runArgs...)
+	finalArgs = append(finalArgs, extraFlags...)
+
+	nsjailArgs := buildNsjailArgs(lang, workdir, runCmd, finalArgs)
 	cmd := exec.CommandContext(ctx, nsjailPath, nsjailArgs...)
 	
 	stdoutPipe, err := cmd.StdoutPipe()

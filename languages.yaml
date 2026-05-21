@@ -9,6 +9,7 @@ languages:
         wall_time_s: 9
         memory_kb: 102400
         max_processes: 100
+      flag_allowlist: ["-u", "-O"]
 
   - id: cpp
     name: C++
@@ -23,6 +24,7 @@ languages:
     run:
       cmd: ./{{artifact}}
       limits: { wall_time_s: 3, memory_kb: 524288, max_processes: 64 }
+      flag_allowlist: ["--help"]
 
   - id: bash
     name: Bash

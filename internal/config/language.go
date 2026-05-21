@@ -14,9 +14,10 @@ type BuildConfig struct {
 }
 
 type RunConfig struct {
-	Cmd    string   `yaml:"cmd"`
-	Args   []string `yaml:"args"`
-	Limits Limits   `yaml:"limits"`
+	Cmd           string   `yaml:"cmd"`
+	Args          []string `yaml:"args"`
+	Limits        Limits   `yaml:"limits"`
+	FlagAllowlist []string `yaml:"flag_allowlist"`
 }
 
 type Language struct {
