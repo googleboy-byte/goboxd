@@ -77,6 +77,19 @@ func NewRunHandler(cfg *config.Config) http.HandlerFunc {
 				sendError(w, "disallowed_flag", err.Error())
 				return
 			}
+			// Deep copy Build to avoid mutating global config
+			cp := *lang.Build
+			lang.Build = &cp
+			if req.Build.Limits != nil {
+				lang.Build.Limits = *req.Build.Limits
+			}
+		}
+
+		if req.Run != nil {
+			if req.Run.Limits != nil {
+				// Deep copy Run (embedded in lang)
+				lang.Run.Limits = *req.Run.Limits
+			}
 		}
 
 		var buildFlags []string

@@ -1,9 +1,9 @@
 package config
 
 type Limits struct {
-	WallTimeS    int `yaml:"wall_time_s"`
-	MemoryKB     int `yaml:"memory_kb"`
-	MaxProcesses int `yaml:"max_processes"`
+	WallTimeS    int `yaml:"wall_time_s" json:"wall_time_s"`
+	MemoryKB     int `yaml:"memory_kb" json:"memory_kb"`
+	MaxProcesses int `yaml:"max_processes" json:"max_processes"`
 }
 
 type BuildConfig struct {
