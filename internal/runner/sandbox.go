@@ -24,6 +24,7 @@ func buildNsjailArgsInternal(limits config.Limits, workdir string, cmd string, a
 		"--log", "/dev/null",
 		"--disable_proc",
 		"--iface_no_lo",
+		"--rlimit_fsize", "1024", // 1GB
 		"--rlimit_nproc", fmt.Sprintf("%d", limits.MaxProcesses),
 		"--cwd", "/sandbox",
 		"--bindmount", fmt.Sprintf("%s:/sandbox", workdir),
@@ -33,6 +34,7 @@ func buildNsjailArgsInternal(limits config.Limits, workdir string, cmd string, a
 		"--bindmount_ro", "/lib64:/lib64",
 		"--bindmount_ro", "/etc:/etc",
 		"--proc_path", "/proc",
+		"--tmpfsmount", "/tmp",
 		"--env", "PATH=/usr/bin:/bin",
 		"--", // everything after is the command
 	}

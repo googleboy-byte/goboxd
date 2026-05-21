@@ -36,6 +36,7 @@ RUN apt-get update && apt-get install -y \
     libnl-route-3-200 \
     libprotobuf32 \
     python3 \
+    rustc \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=nsjail-builder /nsjail-src/nsjail /usr/sbin/nsjail

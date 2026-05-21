@@ -22,3 +22,24 @@ languages:
     run:
       cmd: ./{{artifact}}
       limits: { wall_time_s: 3, memory_kb: 524288, max_processes: 64 }
+
+  - id: bash
+    name: Bash
+    source_filename: script.sh
+    run:
+      cmd: /usr/bin/bash
+      args: ["{{source}}"]
+      limits: { wall_time_s: 2, memory_kb: 51200, max_processes: 10 }
+  
+  - id: rust
+    name: Rust
+    source_filename: solution.rs
+    artifact: solution
+    build:
+      cmd: /usr/bin/rustc
+      args: ["{{source}}", "-o", "{{artifact}}", "{{flags}}"]
+      limits: { wall_time_s: 5, memory_kb: 1048576, max_processes: 100 }
+      flag_allowlist: ["-O", "--opt-level=*"]
+    run:
+      cmd: ./{{artifact}}
+      limits: { wall_time_s: 2, memory_kb: 102400, max_processes: 10 }
