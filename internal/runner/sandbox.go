@@ -8,8 +8,15 @@ import (
 const nsjailPath = "/usr/sbin/nsjail"
 
 func buildNsjailArgs(lang config.Language, workdir string, runCmd string, runArgs []string) []string {
-	limits := lang.Run.Limits
-	args := []string{
+	return buildNsjailArgsInternal(lang.Run.Limits, workdir, runCmd, runArgs)
+}
+
+func buildNsjailArgsBuild(lang config.Language, workdir string, buildCmd string, buildArgs []string) []string {
+	return buildNsjailArgsInternal(lang.Build.Limits, workdir, buildCmd, buildArgs)
+}
+
+func buildNsjailArgsInternal(limits config.Limits, workdir string, cmd string, args []string) []string {
+	res := []string{
 		"--mode", "o", // one-shot mode
 		"--time_limit", fmt.Sprintf("%d", limits.WallTimeS),
 		"--rlimit_as", fmt.Sprintf("%d", limits.MemoryKB/1024), // MB
@@ -24,9 +31,12 @@ func buildNsjailArgs(lang config.Language, workdir string, runCmd string, runArg
 		"--bindmount_ro", "/usr:/usr",
 		"--bindmount_ro", "/lib:/lib",
 		"--bindmount_ro", "/lib64:/lib64",
+		"--bindmount_ro", "/etc:/etc",
+		"--proc_path", "/proc",
+		"--env", "PATH=/usr/bin:/bin",
 		"--", // everything after is the command
 	}
-	args = append(args, runCmd)
-	args = append(args, runArgs...)
-	return args
+	res = append(res, cmd)
+	res = append(res, args...)
+	return res
 }

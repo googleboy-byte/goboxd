@@ -79,11 +79,17 @@ func NewRunHandler(cfg *config.Config) http.HandlerFunc {
 			}
 		}
 
+		var buildFlags []string
+		if req.Build != nil {
+			buildFlags = req.Build.Flags
+		}
+
 		// 3. Execution
 		// Mapping handler.Request to runner.RunRequest
 		runReq := runner.RunRequest{
-			Source: req.Source,
-			Tests:  req.Tests,
+			Source:     req.Source,
+			Tests:      req.Tests,
+			BuildFlags: buildFlags,
 		}
 
 		runResult := runner.Run(lang, runReq)
@@ -93,11 +99,13 @@ func NewRunHandler(cfg *config.Config) http.HandlerFunc {
 			Status: runResult.Status,
 			Tests:  runResult.TestResults,
 		}
-		
-		// For now build is always ok as we don't have build step yet
-		if lang.Build != nil {
+
+		if runResult.Build != nil {
 			resp.Build = &BuildResult{
-				Status: "ok",
+				Status:     runResult.Build.Status,
+				Stdout:     runResult.Build.Stdout,
+				Stderr:     runResult.Build.Stderr,
+				DurationMs: runResult.Build.DurationMs,
 			}
 		}
 

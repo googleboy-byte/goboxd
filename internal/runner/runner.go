@@ -19,8 +19,16 @@ type TestCase struct {
 }
 
 type RunRequest struct {
-	Source string     `json:"source"`
-	Tests  []TestCase `json:"tests"`
+	Source     string      `json:"source"`
+	Tests      []TestCase  `json:"tests"`
+	BuildFlags []string    `json:"build_flags"`
+}
+
+type BuildResult struct {
+	Status     string `json:"status"`
+	Stdout     string `json:"stdout"`
+	Stderr     string `json:"stderr"`
+	DurationMs int64  `json:"duration_ms"`
 }
 
 type TestResult struct {
@@ -32,7 +40,8 @@ type TestResult struct {
 }
 
 type RunResult struct {
-	Status      string       `json:"status"` // accepted, rejected
+	Status      string       `json:"status"` // accepted, build_failed, rejected
+	Build       *BuildResult `json:"build"`
 	TestResults []TestResult `json:"test_results"`
 }
 
@@ -51,14 +60,32 @@ func Run(lang config.Language, req RunRequest) RunResult {
 	results := make([]TestResult, 0, len(req.Tests))
 	overallStatus := "accepted"
 
+	var buildRes *BuildResult
+	if lang.Build != nil {
+		res := buildArtifact(lang, workdir, req.BuildFlags)
+		buildRes = &res
+		if res.Status != "ok" {
+			notExecuted := make([]TestResult, len(req.Tests))
+			for i := range notExecuted {
+				notExecuted[i] = TestResult{Status: "not_executed"}
+			}
+			return RunResult{
+				Status:      "build_failed",
+				Build:       buildRes,
+				TestResults: notExecuted,
+			}
+		}
+	}
+
 	vars := map[string]string{
 		"source":   "/sandbox/" + lang.SourceFilename,
-		"artifact": "/sandbox/" + lang.Artifact,
+		"artifact": lang.Artifact,
 	}
+	runCmd := resolveString(lang.Run.Cmd, vars)
 	runArgs := resolveArgs(lang.Run.Args, vars)
 
 	for _, tc := range req.Tests {
-		res := runTestCase(lang, workdir, runArgs, tc)
+		res := runTestCase(lang, workdir, runCmd, runArgs, tc)
 		results = append(results, res)
 		if res.Status != "accepted" && overallStatus == "accepted" {
 			overallStatus = res.Status // Set first failing status
@@ -67,15 +94,59 @@ func Run(lang config.Language, req RunRequest) RunResult {
 
 	return RunResult{
 		Status:      overallStatus,
+		Build:       buildRes,
 		TestResults: results,
 	}
 }
 
-func runTestCase(lang config.Language, workdir string, runArgs []string, tc TestCase) TestResult {
+func buildArtifact(lang config.Language, workdir string, extraFlags []string) BuildResult {
+	vars := map[string]string{
+		"source":   "/sandbox/" + lang.SourceFilename,
+		"artifact": "/sandbox/" + lang.Artifact,
+		"flags":    "",
+	}
+	resolved := resolveArgs(lang.Build.Args, vars)
+	finalArgs := make([]string, 0, len(resolved)+len(extraFlags))
+	finalArgs = append(finalArgs, extraFlags...)
+	for _, arg := range resolved {
+		if arg != "" {
+			finalArgs = append(finalArgs, arg)
+		}
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(lang.Build.Limits.WallTimeS+1)*time.Second)
+	defer cancel()
+
+	buildCmd := resolveString(lang.Build.Cmd, vars)
+	nsjailArgs := buildNsjailArgsBuild(lang, workdir, buildCmd, finalArgs)
+	cmd := exec.CommandContext(ctx, nsjailPath, nsjailArgs...)
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	start := time.Now()
+	err := cmd.Run()
+	duration := time.Since(start).Milliseconds()
+
+	status := "ok"
+	if err != nil {
+		status = "failed"
+	}
+
+	return BuildResult{
+		Status:     status,
+		Stdout:     stdout.String(),
+		Stderr:     stderr.String(),
+		DurationMs: duration,
+	}
+}
+
+func runTestCase(lang config.Language, workdir string, runCmd string, runArgs []string, tc TestCase) TestResult {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(lang.Run.Limits.WallTimeS+1)*time.Second)
 	defer cancel()
 
-	nsjailArgs := buildNsjailArgs(lang, workdir, lang.Run.Cmd, runArgs)
+	nsjailArgs := buildNsjailArgs(lang, workdir, runCmd, runArgs)
 	cmd := exec.CommandContext(ctx, nsjailPath, nsjailArgs...)
 	
 	stdoutPipe, err := cmd.StdoutPipe()
@@ -143,10 +214,14 @@ func runTestCase(lang config.Language, workdir string, runArgs []string, tc Test
 func resolveArgs(args []string, vars map[string]string) []string {
 	out := make([]string, len(args))
 	for i, a := range args {
-		for k, v := range vars {
-			a = strings.ReplaceAll(a, "{{"+k+"}}", v)
-		}
-		out[i] = a
+		out[i] = resolveString(a, vars)
 	}
 	return out
+}
+
+func resolveString(s string, vars map[string]string) string {
+	for k, v := range vars {
+		s = strings.ReplaceAll(s, "{{"+k+"}}", v)
+	}
+	return s
 }
