@@ -24,6 +24,7 @@ type Language struct {
 	Name           string       `yaml:"name"`
 	SourceFilename string       `yaml:"source_filename"`
 	Artifact       string       `yaml:"artifact"`
+	VersionProbe   string       `yaml:"version_probe"`
 	Build          *BuildConfig `yaml:"build"`
 	Run            RunConfig    `yaml:"run"`
 }

@@ -14,6 +14,7 @@ languages:
     name: C++
     source_filename: solution.cpp
     artifact: solution
+    version_probe: /usr/bin/g++ --version
     build:
       cmd: /usr/bin/g++
       args: ["{{flags}}", "-o", "{{artifact}}", "{{source}}"]
@@ -35,6 +36,7 @@ languages:
     name: Rust
     source_filename: solution.rs
     artifact: solution
+    version_probe: /usr/bin/rustc --version
     build:
       cmd: /usr/bin/rustc
       args: ["{{source}}", "-o", "{{artifact}}", "{{flags}}"]

@@ -28,6 +28,7 @@ func main() {
 		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 	})
 
+	r.Get("/readyz", handler.NewReadyzHandler(cfg))
 	r.Post("/run", handler.NewRunHandler(cfg))
 
 	addr := fmt.Sprintf(":%d", *port)
