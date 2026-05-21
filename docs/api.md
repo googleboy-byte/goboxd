@@ -88,9 +88,32 @@ Liveness check.
 
 ---
 
-### `GET /readyz` (NOT YET IMPLEMENTED)
-Readiness check.
-**Intended Behavior:** Returns 200 only if `nsjail` is available and all language toolchains pass a smoke test. Returns 503 otherwise.
+### `GET /readyz`
+Readiness check. Ensures that the sandboxing environment and all language toolchains are healthy.
+
+**Method:** `GET`  
+**Path:** `/readyz`
+
+#### Response Body
+- **Status 200 OK**: If nsjail and all languages are healthy.
+- **Status 503 Service Unavailable**: If nsjail is broken or any language probe fails.
+
+```json
+{
+  "status": "ok",
+  "nsjail": {
+    "ok": true,
+    "version": "3.4"
+  },
+  "languages": {
+    "py3": { "ok": true, "version": "Python 3.11.2" },
+    "cpp": { "ok": true, "version": "g++ (Debian 12.2.0-14+deb12u1) 12.2.0" }
+  }
+}
+```
+
+> [!NOTE]
+> The `nsjail` version may be hardcoded (e.g., "3.4") as a fallback if the underlying binary does not support the `--version` flag.
 
 ---
 
