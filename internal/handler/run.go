@@ -86,9 +86,30 @@ func NewRunHandler(cfg *config.Config, s *stats.Stats) http.HandlerFunc {
 			return
 		}
 
-		if err := validate.ValidateFilename(lang.SourceFilename); err != nil {
+		for _, tc := range req.Tests {
+			if err := validate.ValidateTest(tc.Stdin, tc.ExpectedOutput, 64*1024, 64*1024); err != nil {
+				sendError(w, "bad_request", err.Error())
+				return
+			}
+		}
+
+		if req.SourceFilename != "" {
+			if err := validate.ValidateFilename(req.SourceFilename); err != nil {
+				sendError(w, "invalid_filename", err.Error())
+				return
+			}
+			lang.SourceFilename = req.SourceFilename
+		} else if err := validate.ValidateFilename(lang.SourceFilename); err != nil {
 			sendError(w, "invalid_filename", err.Error())
 			return
+		}
+
+		if req.ArtifactFilename != "" {
+			if err := validate.ValidateFilename(req.ArtifactFilename); err != nil {
+				sendError(w, "invalid_filename", err.Error())
+				return
+			}
+			lang.Artifact = req.ArtifactFilename
 		}
 
 		if req.Build != nil && lang.Build != nil {

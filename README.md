@@ -8,6 +8,7 @@ This is a sandbox daemon written in go. It is used to run untrusted code in a sa
 make run            # builds image, starts container on port 8080
 make test           # runs unit tests
 make integration    # end-to-end tests, requires running container
+make secure         # runs automated security verification suite
 make lint           # runs static analysis
 ```
 

@@ -71,3 +71,14 @@ func ValidateRunRequest(langId string, source string, testCount int, sourceLimit
 	}
 	return nil
 }
+
+// ValidateTest checks if stdin and expected output are within limits.
+func ValidateTest(stdin, expected string, stdinLimit, expectedLimit int) error {
+	if len(stdin) > stdinLimit {
+		return fmt.Errorf("%w: stdin exceeds limit", ErrBadRequest)
+	}
+	if len(expected) > expectedLimit {
+		return fmt.Errorf("%w: expected_stdout exceeds limit", ErrBadRequest)
+	}
+	return nil
+}

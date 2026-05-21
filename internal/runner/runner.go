@@ -169,12 +169,21 @@ func runTestCase(lang config.Language, workdir string, runCmd string, runArgs []
 	stdoutDone := make(chan struct{})
 	stderrDone := make(chan struct{})
 
+	const limit = 1024 * 64
+	const marker = "\n[TRUNCATED]\n"
+
 	go func() {
-		io.Copy(&stdout, io.LimitReader(stdoutPipe, 1024*64))
+		n, _ := io.Copy(&stdout, io.LimitReader(stdoutPipe, limit))
+		if n >= limit {
+			stdout.WriteString(marker)
+		}
 		stdoutDone <- struct{}{}
 	}()
 	go func() {
-		io.Copy(&stderr, io.LimitReader(stderrPipe, 1024*64))
+		n, _ := io.Copy(&stderr, io.LimitReader(stderrPipe, limit))
+		if n >= limit {
+			stderr.WriteString(marker)
+		}
 		stderrDone <- struct{}{}
 	}()
 

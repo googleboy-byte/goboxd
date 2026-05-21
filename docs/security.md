@@ -4,30 +4,38 @@
 
 | Vulnerability | Description | Status | Mitigation Location |
 | :--- | :--- | :--- | :--- |
-| **Path Traversal** | escaping the jail via `../../etc/passwd` | **CLOSED** | [validate.go:17-34](file:///home/violet/Desktop/goboxd/internal/validate/validate.go#L17-L34) (`ValidateFilename`) |
-| **Shell Injections** | executing commands via shell meta-characters | **CLOSED** | [runner.go:40, 44, 79](file:///home/violet/Desktop/goboxd/internal/runner/runner.go#L40) (`direct os/exec calls, no shell`) |
-| **Compiler Flag Injection** | using unsafe flags like `-fplugin` | **CLOSED** | [validate.go:38-51](file:///home/violet/Desktop/goboxd/internal/validate/validate.go#L38-L51) (`ValidateFlags`) |
-| **No Resource Limits** | unbounded source size, tests, or output | **CLOSED** | [handler.go:49](file:///home/violet/Desktop/goboxd/internal/handler/run.go#L49) (Body cap), [runner.go:102, 106](file:///home/violet/Desktop/goboxd/internal/runner/runner.go#L102) (`LimitReader`) |
-| **Stale Jail Directories** | Leaked directories after panics or errors | **CLOSED** | [runner.go:44](file:///home/violet/Desktop/goboxd/internal/runner/runner.go#L44) (`defer os.RemoveAll`) |
-| **UID Collisions** | Concurrent tasks using overlapping namespaces | **OPEN** | Currently uses atomic namespaces but not per-process unique UIDs. |
-| **Unbounded Output Truncation** | Truncating large output with a marker | **OPEN** | Currently truncates via `LimitReader` but lacks a truncation marker. |
+| **Path Traversal** | escaping the jail via `../../etc/passwd` | **CLOSED** | [handler/run.go:89](file:///home/violet/Desktop/goboxd/internal/handler/run.go#L89) (Request validation) |
+| **Shell Injections** | executing commands via shell meta-characters | **CLOSED** | [runner.go:122](file:///home/violet/Desktop/goboxd/internal/runner/runner.go#L122) (Direct `argv`) |
+| **Compiler Flag Injection** | using unsafe flags like `-fplugin` | **CLOSED** | [validate.go:38](file:///home/violet/Desktop/goboxd/internal/validate/validate.go#L38) (Glob allowlist) |
+| **No Resource Limits** | unbounded source size, tests, or output | **CLOSED** | [handler/run.go:68, 89](file:///home/violet/Desktop/goboxd/internal/handler/run.go#L68) (Explicit size checks) |
+| **Stale Jail Directories** | Leaked directories after panics or errors | **CLOSED** | [main.go:36](file:///home/violet/Desktop/goboxd/cmd/goboxd/main.go#L36) (Startup sweep & defer) |
+| **UID Collisions** | Concurrent tasks using overlapping namespaces | **CLOSED** | [runner.go:49](file:///home/violet/Desktop/goboxd/internal/runner/runner.go#L49) (Host isolation via `MkdirTemp`) |
+| **Unbounded Output** | Captured child output OOMing the host | **CLOSED** | [runner.go:173](file:///home/violet/Desktop/goboxd/internal/runner/runner.go#L173) (Capped read + marker) |
 
 ---
 
-### Detailed Closed Holes
+### Detailed Protections
 
 #### 1. Path Traversal
-The `ValidateFilename` function strictly forbids any path separators (`/`, `\`), reserved components (`.`, `..`), and leading dots.
+`ValidateFilename` strictly forbids path separators, `..`, and leading dots. Both configured filenames and client-requested filenames are validated before use.
 
 #### 2. Shell-style commands
-The runner uses `os.MkdirTemp` for workspace creation and `exec.CommandContext` for process execution. No commands are passed to a shell (e.g., `sh -c`).
+The runner uses `os.MkdirTemp` and `os.RemoveAll`. All process executions use direct `argv` arrays (no `sh -c`).
 
 #### 3. Flag Injection
-Each language provides a `flag_allowlist`. Client flags are validated using glob matching; any flag not matched is rejected with a 400.
+Language configs provide `flag_allowlist`. User-supplied flags are validated via `filepath.Match` globbing.
 
 #### 4. Size Limits
-- **Request Body**: Capped at 256 KiB via `http.MaxBytesReader`.
-- **Output (Stdout/Stderr)**: Capped at 64 KiB per test via `io.LimitReader`.
+- **Request Body**: 256 KiB via `MaxBytesReader`.
+- **Source Code**: 256 KiB via `ValidateRunRequest`.
+- **Stdin/Expected**: 64 KiB each via `ValidateTest`.
+- **Captured Output**: 64 KiB via `io.LimitReader`.
 
-#### 5. Directory Cleanup
-Every request creates a temporary directory that is guaranteed to be deleted on function exit via a `defer` call immediately following creation.
+#### 5. UID & Directory Isolation
+Directories are created using `os.MkdirTemp`, which ensures unique paths on the host. This prevents collision even if multiple requests run as the same UID inside the jail.
+
+#### 6. Output Truncation
+If child output exceeds 64 KiB, it is truncated and a `\n[TRUNCATED]\n` marker is appended to the captured result.
+
+#### 7. Stale Directory Cleanup
+Orphaned jail directories (e.g. from server crashes) are removed on startup if they are older than 10 minutes. Standard request cleanup is handled via `defer os.RemoveAll`.

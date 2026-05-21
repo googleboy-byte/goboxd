@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/thesouldev/goboxd/internal/config"
@@ -32,7 +34,10 @@ func main() {
 	// 1. Initialize stats
 	s := stats.NewStats()
 
-	// 2. Startup Probes
+	// 2. Startup Cleanup
+	runner.SweepOrphanedDirectories(os.TempDir(), 10*time.Minute)
+
+	// 3. Startup Probes
 	nsjailProbe := runner.ProbeNsjail()
 	nsjailVer := nsjailProbe.Version
 	if !nsjailProbe.OK {
