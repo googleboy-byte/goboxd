@@ -181,6 +181,7 @@ func runTestCase(lang config.Language, workdir string, runCmd string, runArgs []
 		n, _ := io.Copy(&stdout, io.LimitReader(stdoutPipe, limit))
 		if n >= limit {
 			stdout.WriteString(marker)
+			io.Copy(io.Discard, stdoutPipe)
 		}
 		stdoutDone <- struct{}{}
 	}()
@@ -188,6 +189,7 @@ func runTestCase(lang config.Language, workdir string, runCmd string, runArgs []
 		n, _ := io.Copy(&stderr, io.LimitReader(stderrPipe, limit))
 		if n >= limit {
 			stderr.WriteString(marker)
+			io.Copy(io.Discard, stderrPipe)
 		}
 		stderrDone <- struct{}{}
 	}()
