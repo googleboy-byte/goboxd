@@ -16,6 +16,12 @@ At its heart, `goboxd` wraps **NSJail**, a powerful Linux namespaces-based sandb
 5. **Execution**: Spawns the sandbox, pipes stdin, and captures stdout/stderr up to a cap (64KB).
 6. **Response**: Aggregates results and maps them to the project's status vocabulary.
 
+## Concurrency & Resource Management
+`goboxd` manages system resources through several mechanisms:
+- **Execution Semaphore**: A semaphore based on `MaxConcurrentJobs` limits the number of active `nsjail` processes.
+- **Request Queue Timeout**: By default, requests will wait up to 30 seconds to acquire a semaphore slot. If the timeout is reached, the server returns a `503 Service Unavailable` with a `queue_timeout` error.
+- **Memory & Process Limits**: Each request is subject to hard resource limits enforced by `nsjail` rlimits.
+
 ## Package Structure
 - `cmd/goboxd`: Entry point. Handles flag parsing and server initialization.
 - `internal/handler`: HTTP routing and JSON request/response handling.
@@ -34,6 +40,11 @@ The sandbox is built in `internal/runner/sandbox.go`. It mounts a `tmpfs` at `/`
 - **runtime_error**: Code exited with a non-zero code.
 - **time_exceeded**: Process killed after hitting wall-clock limit.
 - **internal_error**: Something went wrong in the server itself.
+
+## Health Check Optimizations
+To ensure high availability without degrading performance:
+- **Readyz Caching**: The `/readyz` endpoint performs heavy probing (spawning processes for each language). To prevent resource starvation, these results are cached for 30 seconds.
+- **Load Isolation**: Health probes do not consume execution semaphore slots, ensuring the server can still report its status even if all execution slots are full.
 
 ## Security Boundaries
 - **Trusted**: The Go server, the `languages.yaml` configuration, and the NSJail binary.
