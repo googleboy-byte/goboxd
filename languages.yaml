@@ -85,3 +85,18 @@ languages:
       cmd: /usr/bin/node
       args: ["{{source}}"]
       limits: { wall_time_s: 9, memory_kb: 1048576, max_processes: 100 }
+
+  - id: verilog
+    name: Verilog (Icarus)
+    source_filename: solution.v
+    artifact: solution.vvp
+    version_probe: "/usr/bin/iverilog -V"
+    build:
+      cmd: /usr/bin/iverilog
+      args: ["{{flags}}", "-o", "{{artifact}}", "{{source}}"]
+      limits: { wall_time_s: 10, memory_kb: 524288, max_processes: 100 }
+      flag_allowlist: ["-g2012", "-g2005", "-Wall"]
+    run:
+      cmd: /usr/bin/vvp
+      args: ["{{artifact}}"]
+      limits: { wall_time_s: 10, memory_kb: 262144, max_processes: 100 }

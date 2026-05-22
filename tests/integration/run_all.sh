@@ -70,4 +70,7 @@ test_lang "c" $'#include <stdio.h>\nint main() { printf("hello\\n"); return 0; }
 # 7. JavaScript
 test_lang "js" "console.log('hello')" "accepted"
 
+# 8. Verilog
+test_lang "verilog" "module main; initial begin \$display(\"hello\"); \$finish; end endmodule" "accepted"
+
 echo "--- All integration tests passed! ---"

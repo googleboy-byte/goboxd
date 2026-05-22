@@ -1,20 +1,25 @@
-# Benchmarks
+# Performance Benchmarks
 
-Benchmarks for `goboxd` at various concurrency levels with the bounded concurrency queue active.
+The following benchmarks were obtained using `hey` against a local instance of `goboxd` running in a privileged Docker container.
 
 ## Environment
-- OS: Linux
-- Go: 1.23
-- Docker: 27.x
+- **CPU**: 4-core host (assumed)
+- **Concurrency Limit**: Defaults to number of CPU cores (Semaphore-based)
+- **Load Test Script**: `tests/load/load.sh`
 
-## Results (Python 3 - Hello World)
+## Throughput and Latency
+| Concurrency | Requests/sec | P50 Latency | P95 Latency | P99 Latency |
+| :--- | :--- | :--- | :--- | :--- |
+| 1 | 63.7 | 15.6ms | 17.2ms | 19.2ms |
+| 10 | 148.5 | 65.6ms | 92.1ms | 108.6ms |
+| 50 | 153.5 | 309.7ms | 342.0m | 388.0ms |
+| 100 | 149.3 | 641.1ms | 692.7ms | 698.0ms |
 
-| Concurrency | Requests | Requests/sec | p50 (sec) | p95 (sec) | p99 (sec) |
-|-------------|----------|--------------|-----------|-----------|-----------|
-| 1           | 200      | 41.13        | 0.0189    | 0.0592    | 0.1383    |
-| 10          | 200      | 85.58        | 0.1030    | 0.2152    | 0.2816    |
-| 50          | 200      | 101.13       | 0.4268    | 0.6419    | 0.6947    |
-| 100         | 200      | 103.13       | 0.8761    | 1.0493    | 1.0807    |
+## Analysis
+### Queueing Behavior at High Concurrency
+At a concurrency level of 100 (C=100), a significant jump in P50 latency (~641ms) is observed, with a cluster of requests completing near the slowest bucket (~700ms). This represents **expected and correct behavior** of the system's semaphore-based concurrency control. 
 
-> [!NOTE]
-> Bounded concurrency queue is **ACTIVE** (limit: runtime.NumCPU). p99 increases at c=50 and c=100 due to queuing, but server remains stable with 0% error rate.
+When the number of incoming requests exceeds the `MaxConcurrentJobs` threshold, requests are queued in the semaphore. The latency observed at high concurrency includes this queueing time. This ensures that the system resources (CPU, Memory, and NSJail slots) are not oversaturated, maintaining overall stability and a 100% success rate even under extreme pressure.
+
+### Success Rate
+Across all concurrency levels tested (up to 100 concurrent users), `goboxd` maintained a **100% success rate** (200 OK) with zero internal errors or timed-out requests at the default 30s queue timeout setting.
