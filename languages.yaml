@@ -47,3 +47,17 @@ languages:
     run:
       cmd: ./{{artifact}}
       limits: { wall_time_s: 2, memory_kb: 102400, max_processes: 10 }
+
+  - id: java
+    name: Java 17
+    source_filename_strategy: from_request
+    artifact_filename_strategy: from_request
+    version_probe: /usr/bin/javac -version
+    build:
+      cmd: /usr/bin/javac
+      args: ["-J-Xmx512m", "-J-XX:-UseCompressedOops", "-J-XX:-UseCompressedClassPointers", "-d", ".", "{{source}}"]
+      limits: { wall_time_s: 15, memory_kb: 2097152, max_processes: 100 }
+    run:
+      cmd: /usr/bin/java
+      args: ["-Xmx512m", "-XX:-UseCompressedOops", "-XX:-UseCompressedClassPointers", "-cp", ".", "{{artifact}}"]
+      limits: { wall_time_s: 15, memory_kb: 2097152, max_processes: 64 }

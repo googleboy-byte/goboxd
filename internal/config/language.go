@@ -21,11 +21,13 @@ type RunConfig struct {
 }
 
 type Language struct {
-	ID             string       `yaml:"id"`
-	Name           string       `yaml:"name"`
-	SourceFilename string       `yaml:"source_filename"`
-	Artifact       string       `yaml:"artifact"`
-	VersionProbe   string       `yaml:"version_probe"`
-	Build          *BuildConfig `yaml:"build"`
-	Run            RunConfig    `yaml:"run"`
+	ID                     string       `yaml:"id"`
+	Name                   string       `yaml:"name"`
+	SourceFilename         string       `yaml:"source_filename"`
+	SourceFilenameStrategy string       `yaml:"source_filename_strategy"`
+	Artifact               string       `yaml:"artifact"`
+	ArtifactFilenameStrategy string       `yaml:"artifact_filename_strategy"`
+	VersionProbe           string       `yaml:"version_probe"`
+	Build                  *BuildConfig `yaml:"build"`
+	Run                    RunConfig    `yaml:"run"`
 }

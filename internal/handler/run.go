@@ -125,6 +125,10 @@ func NewRunHandler(cfg *config.Config, s *stats.Stats) http.HandlerFunc {
 			}
 		}
 
+		if lang.SourceFilenameStrategy == "from_request" && req.SourceFilename == "" {
+			sendError(w, "bad_request", "source_filename is required for this language")
+			return
+		}
 		if req.SourceFilename != "" {
 			if err := validate.ValidateFilename(req.SourceFilename); err != nil {
 				status = "invalid_filename"
@@ -138,6 +142,10 @@ func NewRunHandler(cfg *config.Config, s *stats.Stats) http.HandlerFunc {
 			return
 		}
 
+		if lang.ArtifactFilenameStrategy == "from_request" && req.ArtifactFilename == "" {
+			sendError(w, "bad_request", "artifact_filename is required for this language")
+			return
+		}
 		if req.ArtifactFilename != "" {
 			if err := validate.ValidateFilename(req.ArtifactFilename); err != nil {
 				status = "invalid_filename"

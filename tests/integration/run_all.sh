@@ -46,4 +46,22 @@ test_lang "bash" "echo hello" "accepted"
 # 4. Rust
 test_lang "rust" $'fn main() { println!("hello"); }' "accepted"
 
+# 5. Java (requires source_filename and artifact_filename)
+echo "Testing java..."
+JAVA_RESP=$(curl -s -X POST -H "Content-Type: application/json" -d '{
+  "language":"java",
+  "source":"public class Hello { public static void main(String[] args) { System.out.println(\"hello\"); } }",
+  "source_filename": "Hello.java",
+  "artifact_filename": "Hello",
+  "tests":[{"stdin":"","expected_stdout":"hello\n"}]
+}' "$SERVER_URL/run")
+JAVA_STATUS=$(echo "$JAVA_RESP" | jq -r '.status')
+if [ "$JAVA_STATUS" == "accepted" ]; then
+    echo "✅ java: $JAVA_STATUS"
+else
+    echo "❌ java: Expected accepted, got $JAVA_STATUS"
+    echo "Full response: $JAVA_RESP"
+    exit 1
+fi
+
 echo "--- All integration tests passed! ---"
