@@ -1,51 +1,100 @@
 # Architecture Overview
 
-`goboxd` is a specialized execution server designed for hosting untrusted code (e.g., competitive programming solutions, CI tasks) in isolated environments.
+## What it is
+`goboxd` is a specialized execution server for hosting untrusted code in isolated environments. It utilizes Linux namespaces and control groups via NSJail to enforce security boundaries. The system manages the entire lifecycle of a request, from input validation and compilation to execution and output capture, providing a REST API for submission and results.
 
-## Core Design
-At its heart, `goboxd` wraps **NSJail**, a powerful Linux namespaces-based sandbox. While Go manages the lifecycle and API, the actual security boundaries are enforced by the Linux kernel via NSJail.
+## How a request flows
+1.  **Entry**: `handler.NewRunHandler` ([run.go](file:///home/violet/Desktop/goboxd/internal/handler/run.go)) receives a POST request.
+2.  **Queue**: The request waits to acquire a slot in the `sem` channel (semaphore).
+3.  **Parse**: JSON is decoded into a `handler.Request` struct.
+4.  **Validate**:
+    - `config.Config.GetLanguage` checks if the language ID is supported.
+    - `validate.ValidateRunRequest` checks source size and number of tests.
+    - `validate.ValidateTest` checks stdin/stdout sizes for each test case.
+    - `validate.ValidateFilename` checks `source_filename` and `artifact_filename`.
+    - `validate.ValidateFlags` checks `build.flags` and `run.flags` against the language allowlist.
+5.  **Setup**: `runner.Run` ([runner.go](file:///home/violet/Desktop/goboxd/internal/runner/runner.go)) creates a unique temporary directory via `os.MkdirTemp`.
+6.  **Build**: If the language has a `build` section, `runner.buildArtifact` invokes the compiler:
+    - `runner.buildNsjailArgsBuild` ([sandbox.go](file:///home/violet/Desktop/goboxd/internal/runner/sandbox.go)) constructs the sandbox policy.
+    - `exec.CommandContext` executes the compiler inside the jail.
+7.  **Execute**: `runner.runTestCase` runs each test case sequentially:
+    - `runner.ResolveString` replaces placeholders like `{{source}}` and `{{artifact}}`.
+    - `runner.buildNsjailArgs` constructs the execution sandbox command.
+    - `io.LimitReader` and `io.Discard` manage output capture and async pipe draining.
+8.  **Cleanup**: `defer os.RemoveAll` deletes the temporary task directory.
+9.  **Response**: The server encodes `handler.Response` to JSON and returns it to the client.
 
-## Request Lifecycle
-1. **HTTP Handler**: Receives the JSON request and caps the body size (256KB).
-2. **Validation**: Checks that the language exists and that filenames and compiler flags are safe.
-3. **Runner**:
-   - Creates a unique temporary directory.
-   - Saves the source code.
-   - Resolves command arguments from placeholders.
-4. **NSJail Wrapper**: Constructs the `nsjail` command with resource rlimits and bind-mounts.
-5. **Execution**: Spawns the sandbox, pipes stdin, and captures stdout/stderr up to a cap (64KB).
-6. **Response**: Aggregates results and maps them to the project's status vocabulary.
-
-## Concurrency & Resource Management
-`goboxd` manages system resources through several mechanisms:
-- **Execution Semaphore**: A semaphore based on `MaxConcurrentJobs` limits the number of active `nsjail` processes.
-- **Request Queue Timeout**: By default, requests will wait up to 30 seconds to acquire a semaphore slot. If the timeout is reached, the server returns a `503 Service Unavailable` with a `queue_timeout` error.
-- **Memory & Process Limits**: Each request is subject to hard resource limits enforced by `nsjail` rlimits.
-
-## Package Structure
-- `cmd/goboxd`: Entry point. Handles flag parsing and server initialization.
-- `internal/handler`: HTTP routing and JSON request/response handling.
-- `internal/config`: Loads and manages the language registry from `languages.yaml`.
-- `internal/validate`: Security-critical validation logic for inputs.
-- `internal/runner`: The core execution loop and NSJail integration.
+## File Map
+- `cmd/goboxd/main.go`: Entry point, flag parsing, server initialization, and routing.
+- `internal/config/config.go`: YAML loading, limit validation, and language registry management.
+- `internal/config/language.go`: Data structures for language, build, and run configurations.
+- `internal/handler/run.go`: Primary API handler for code execution requests and request logging.
+- `internal/handler/health.go`: Readiness/Liveness probes and the `/info` endpoint.
+- `internal/runner/runner.go`: Core execution loop, compilation, and test case management.
+- `internal/runner/sandbox.go`: Nsjail argument construction and policy enforcement.
+- `internal/runner/probe.go`: Utility for checking environment readiness (nsjail, compilers).
+- `internal/validate/validate.go`: Security-critical validation for filenames, flags, and request sizes.
+- `internal/stats/stats.go`: Atomic counters for server metrics and health monitoring.
 
 ## Language Registry
-Languages are "plug-and-play". The `config` package parses the YAML registry into Go structs. The `runner` uses these structs to determine which compiler or interpreter to invoke and what placeholders to replace.
+The registry is defined in `languages.yaml` and maps to the `config.Language` struct.
+- **Placeholders**: `{{source}}` and `{{artifact}}` are resolved to paths inside the `/sandbox` jail.
+- **Version Probe**: `version_probe` is a command run at startup to verify tool installation.
+- **Two-Stage**: If a `build` block is present, compilation is performed before running tests.
+
+## Adding a Language
+To add a new language (e.g., Kotlin):
+1.  **Dockerfile**: Install the required compiler/runtime (e.g., `apt-get install -y kotlin`).
+2.  **languages.yaml**: Add an entry with these fields:
+    - `id`: Short identifier (e.g., `kt`).
+    - `name`: Display name.
+    - `source_filename`: The expected source name (e.g., `Solution.kt`).
+    - `artifact`: The output file (e.g., `Solution.jar`).
+    - `build`: (Optional) command and args to compile.
+    - `run`: Command and args to execute (use `{{source}}` or `{{artifact}}`).
+    - `run.limits`: Define `wall_time_s`, `memory_kb`, and `max_processes`.
 
 ## Sandbox Construction
-The sandbox is built in `internal/runner/sandbox.go`. It mounts a `tmpfs` at `/`, bind-mounts the working directory to `/sandbox`, and provides read-only access to essential system paths (`/usr`, `/bin`, etc.).
+Nsjail arguments are built in `internal/runner/sandbox.go`:
+- `--mode o`: One-shot execution; waits for the child process to exit.
+- `--time_limit`: Enforces the `wall_time_s` limit.
+- `--rlimit_as`: Limits Address Space (RAM) in MB.
+- `--max_cpus 1`: Prevents a single task from saturating the host CPU.
+- `--iface_no_lo`: Disables the loopback interface for network isolation.
+- `--cwd /sandbox`: Sets the working directory inside the jail.
+- `--bindmount [dir]:/sandbox`: Mounts the task-specific directory as read-write.
+- `--bindmount_ro [path]:[path]`: Mounts essential system paths (/usr, /bin, /lib) as read-only.
+- `--tmpfsmount /tmp`: Provides a private, volatile /tmp directory.
+
+## Concurrency Model
+- **Semaphore**: A buffered channel limits concurrent nsjail processes to `MaxConcurrentJobs`.
+- **Queue Timeout**: Requests block for up to `QueueTimeoutS` (default 30s) before returning `503 Service Unavailable`.
+- **Stats**: Atomic counters track `JobsTotal`, `InFlight`, and `JobsFailedInternal`.
 
 ## Status Vocabulary
-- **accepted**: Perfect match (or whitespace-only match if configured).
-- **runtime_error**: Code exited with a non-zero code.
-- **time_exceeded**: Process killed after hitting wall-clock limit.
-- **internal_error**: Something went wrong in the server itself.
+| Status | Scope | Description |
+| :--- | :--- | :--- |
+| `accepted` | Test | Output matches expected exactly. |
+| `wrong_output` | Test | Output does not match. |
+| `output_whitespace_mismatch` | Test | Matches only after trimming whitespace. |
+| `runtime_error` | Test | Process exited with non-zero code. |
+| `time_exceeded` | Test | Process hit wall-clock limit. |
+| `build_failed` | Request | Compilation failed. |
+| `internal_error` | Request | Unexpected server failure. |
 
-## Health Check Optimizations
-To ensure high availability without degrading performance:
-- **Readyz Caching**: The `/readyz` endpoint performs heavy probing (spawning processes for each language). To prevent resource starvation, these results are cached for 30 seconds.
-- **Load Isolation**: Health probes do not consume execution semaphore slots, ensuring the server can still report its status even if all execution slots are full.
+## Security Model
+- **Trusted**: The Go binary, the configuration files, and the host environment.
+- **Untrusted**: User-provided source code, test data, and compiler/run flags.
 
-## Security Boundaries
-- **Trusted**: The Go server, the `languages.yaml` configuration, and the NSJail binary.
-- **Untrusted**: The source code and flags provided in the HTTP request.
+| Protection | Mitigation Location |
+| :--- | :--- |
+| **Path Traversal** | [validate.go:12, 17](file:///home/violet/Desktop/goboxd/internal/validate/validate.go) |
+| **Flag Injection** | [validate.go:42](file:///home/violet/Desktop/goboxd/internal/validate/validate.go) |
+| **Request Size** | [run.go:78](file:///home/violet/Desktop/goboxd/internal/handler/run.go) (Body), [validate.go:58, 68](file:///home/violet/Desktop/goboxd/internal/validate/validate.go) |
+| **Output Truncation** | [runner.go:181, 189](file:///home/violet/Desktop/goboxd/internal/runner/runner.go) |
+| **Network Isolation** | [sandbox.go:27](file:///home/violet/Desktop/goboxd/internal/runner/sandbox.go) (`--iface_no_lo`) |
+
+## Health Endpoints
+- `/healthz`: Liveness probe (200 OK).
+- `/readyz`: Readiness probe. Spawns probes for all languages. Results are cached for 30 seconds to prevent resource exhaustion.
+- `/info`: Returns detailed server state, including nsjail and language versions.
