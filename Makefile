@@ -20,6 +20,7 @@ build:
 
 run:
 	@echo "Bringing up Docker container $(IMAGE)..."
+	git submodule update --init --recursive
 	-docker kill $(BINARY) 2>/dev/null || true
 	-docker rm $(BINARY) 2>/dev/null || true
 	docker build -t $(IMAGE) .
