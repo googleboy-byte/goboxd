@@ -9,6 +9,9 @@ import (
 	"github.com/thesouldev/goboxd/internal/stats"
 	"github.com/thesouldev/goboxd/internal/validate"
 	"time"
+	"crypto/rand"
+	"encoding/hex"
+	"log/slog"
 )
 
 type ConfigOverride struct {
@@ -50,6 +53,20 @@ func NewRunHandler(cfg *config.Config, s *stats.Stats) http.HandlerFunc {
 	sem := make(chan struct{}, cfg.MaxConcurrentJobs)
 	return func(w http.ResponseWriter, r *http.Request) {
 		s.JobsTotal.Add(1)
+		rid := generateRID()
+		start := time.Now()
+		langID := "unknown"
+		status := "pending"
+
+		defer func() {
+			duration := time.Since(start)
+			slog.Info("request completed",
+				"request_id", rid,
+				"language", langID,
+				"status", status,
+				"duration_ms", duration.Milliseconds(),
+			)
+		}()
 
 		// 1. Queueing
 		select {
@@ -58,6 +75,7 @@ func NewRunHandler(cfg *config.Config, s *stats.Stats) http.HandlerFunc {
 		case <-r.Context().Done():
 			return
 		case <-time.After(time.Duration(cfg.QueueTimeoutS) * time.Second):
+			status = "queue_timeout"
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusServiceUnavailable)
 			json.NewEncoder(w).Encode(map[string]interface{}{
@@ -79,19 +97,23 @@ func NewRunHandler(cfg *config.Config, s *stats.Stats) http.HandlerFunc {
 
 		var req Request
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			status = "invalid_json"
 			sendError(w, "invalid_json", err.Error())
 			return
 		}
+		langID = req.Language
 
 		// 1. Language lookup
 		lang, err := cfg.GetLanguage(req.Language)
 		if err != nil {
+			status = "unknown_language"
 			sendError(w, "unknown_language", err.Error())
 			return
 		}
 
 		// 2. Validation
 		if err := validate.ValidateRunRequest(req.Language, req.Source, len(req.Tests), 256*1024, 50); err != nil {
+			status = "bad_request"
 			sendError(w, "bad_request", err.Error())
 			return
 		}
@@ -105,17 +127,20 @@ func NewRunHandler(cfg *config.Config, s *stats.Stats) http.HandlerFunc {
 
 		if req.SourceFilename != "" {
 			if err := validate.ValidateFilename(req.SourceFilename); err != nil {
+				status = "invalid_filename"
 				sendError(w, "invalid_filename", err.Error())
 				return
 			}
 			lang.SourceFilename = req.SourceFilename
 		} else if err := validate.ValidateFilename(lang.SourceFilename); err != nil {
+			status = "invalid_filename"
 			sendError(w, "invalid_filename", err.Error())
 			return
 		}
 
 		if req.ArtifactFilename != "" {
 			if err := validate.ValidateFilename(req.ArtifactFilename); err != nil {
+				status = "invalid_filename"
 				sendError(w, "invalid_filename", err.Error())
 				return
 			}
@@ -124,6 +149,7 @@ func NewRunHandler(cfg *config.Config, s *stats.Stats) http.HandlerFunc {
 
 		if req.Build != nil && lang.Build != nil {
 			if err := validate.ValidateFlags(req.Build.Flags, lang.Build.FlagAllowlist); err != nil {
+				status = "disallowed_flag"
 				sendError(w, "disallowed_flag", err.Error())
 				return
 			}
@@ -147,6 +173,7 @@ func NewRunHandler(cfg *config.Config, s *stats.Stats) http.HandlerFunc {
 		var runFlags []string
 		if req.Run != nil {
 			if err := validate.ValidateFlags(req.Run.Flags, lang.Run.FlagAllowlist); err != nil {
+				status = "disallowed_flag"
 				sendError(w, "disallowed_flag", err.Error())
 				return
 			}
@@ -180,6 +207,7 @@ func NewRunHandler(cfg *config.Config, s *stats.Stats) http.HandlerFunc {
 		}
 
 		runResult := runner.Run(lang, runReq)
+		status = runResult.Status
 
 		// 4. Response
 		resp := Response{
@@ -214,4 +242,12 @@ func sendError(w http.ResponseWriter, code, message string) {
 	resp.Error.Code = code
 	resp.Error.Message = message
 	json.NewEncoder(w).Encode(resp)
+}
+
+func generateRID() string {
+	b := make([]byte, 8)
+	if _, err := rand.Read(b); err != nil {
+		return "unknown"
+	}
+	return hex.EncodeToString(b)
 }

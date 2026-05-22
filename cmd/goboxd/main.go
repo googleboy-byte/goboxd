@@ -14,6 +14,7 @@ import (
 	"github.com/thesouldev/goboxd/internal/handler"
 	"github.com/thesouldev/goboxd/internal/runner"
 	"github.com/thesouldev/goboxd/internal/stats"
+	"log/slog"
 )
 
 var (
@@ -25,6 +26,7 @@ func main() {
 	port := flag.Int("port", 8080, "Port to listen on")
 	configPath := flag.String("config", "languages.yaml", "path to languages.yaml")
 	flag.Parse()
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 
 	cfg, err := config.Load(*configPath)
 	if err != nil {
