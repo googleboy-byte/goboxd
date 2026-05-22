@@ -10,6 +10,7 @@ import (
 	"github.com/thesouldev/goboxd/internal/config"
 	"github.com/thesouldev/goboxd/internal/runner"
 	"github.com/thesouldev/goboxd/internal/stats"
+	"sync"
 )
 
 type HealthHandler struct {
@@ -20,6 +21,14 @@ type HealthHandler struct {
 	LangVers     map[string]string
 	Stats        *stats.Stats
 	Config       *config.Config
+	cache        probeCache
+}
+
+type probeCache struct {
+	mu       sync.Mutex
+	result   *ReadyzResponse
+	cachedAt time.Time
+	ttl      time.Duration
 }
 
 type NsjailStatus struct {
@@ -87,12 +96,23 @@ func NewHealthHandler(version, commit, nsjailVer string, langVers map[string]str
 		LangVers:   langVers,
 		Stats:      s,
 		Config:     cfg,
+		cache: probeCache{
+			ttl: 30 * time.Second,
+		},
 	}
 }
 
 func (h *HealthHandler) Readyz(w http.ResponseWriter, r *http.Request) {
+	h.cache.mu.Lock()
+	defer h.cache.mu.Unlock()
+
+	if h.cache.result != nil && time.Since(h.cache.cachedAt) < h.cache.ttl {
+		h.writeReadyz(w, h.cache.result)
+		return
+	}
+
 	nsjail := runner.ProbeNsjail()
-	
+
 	resp := ReadyzResponse{
 		Languages: make(map[string]LanguageStatus),
 	}
@@ -103,7 +123,10 @@ func (h *HealthHandler) Readyz(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !nsjail.OK {
-		h.sendDegraded(w, resp)
+		resp.Status = "degraded"
+		h.cache.result = &resp
+		h.cache.cachedAt = time.Now()
+		h.writeReadyz(w, &resp)
 		return
 	}
 
@@ -122,12 +145,23 @@ func (h *HealthHandler) Readyz(w http.ResponseWriter, r *http.Request) {
 
 	if allOK {
 		resp.Status = "ok"
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(resp)
 	} else {
-		h.sendDegraded(w, resp)
+		resp.Status = "degraded"
 	}
+
+	h.cache.result = &resp
+	h.cache.cachedAt = time.Now()
+	h.writeReadyz(w, &resp)
+}
+
+func (h *HealthHandler) writeReadyz(w http.ResponseWriter, resp *ReadyzResponse) {
+	w.Header().Set("Content-Type", "application/json")
+	if resp.Status == "ok" {
+		w.WriteHeader(http.StatusOK)
+	} else {
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}
+	json.NewEncoder(w).Encode(resp)
 }
 
 func (h *HealthHandler) sendDegraded(w http.ResponseWriter, resp ReadyzResponse) {
