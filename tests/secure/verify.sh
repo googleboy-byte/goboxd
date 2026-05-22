@@ -2,6 +2,16 @@
 # Security verification script for goboxd
 
 SERVER_URL=${1:-"http://localhost:8080"}
+echo "Waiting for $SERVER_URL to be ready..."
+for i in {1..10}; do
+  if curl -s $SERVER_URL/healthz > /dev/null; then
+    echo "Server is ready!"
+    break
+  fi
+  echo "Waiting..."
+  sleep 1
+done
+
 echo "Verifying security holes for $SERVER_URL..."
 
 # Hole 1: Path Traversal
@@ -93,6 +103,24 @@ if [[ "$OUT" == *"[TRUNCATED]"* ]]; then
   echo "  PASS: Truncation marker present"
 else
   echo "  FAIL: Truncation marker missing"
+  exit 1
+fi
+
+# Hole 7: Network Isolation
+echo "[Hole 7] Network Isolation..."
+# Try to connect to 1.1.1.1:80 (external) with a 1s timeout
+STATUS_JSON=$(curl -s -X POST -H "Content-Type: application/json" -d '{
+  "language":"py3",
+  "source":"import socket\ntry:\n  socket.create_connection((\"1.1.1.1\", 80), timeout=1)\n  print(\"CONNECTED\")\nexcept Exception as e:\n  print(\"ISOLATED\")",
+  "tests":[{"stdin":"","expected_stdout":"ISOLATED\n"}]
+}' $SERVER_URL/run)
+STATUS=$(echo "$STATUS_JSON" | jq -r '.status')
+STDOUT=$(echo "$STATUS_JSON" | jq -r '.tests[0].stdout')
+
+if [ "$STATUS" == "accepted" ] && [ "$STDOUT" == "ISOLATED" ]; then
+  echo "  PASS: Network is isolated"
+else
+  echo "  FAIL: Network is NOT isolated (Status: $STATUS, Output: $STDOUT)"
   exit 1
 fi
 
