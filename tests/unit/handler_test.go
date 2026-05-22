@@ -42,6 +42,7 @@ func testConfig() *config.Config {
 			},
 		},
 		MaxConcurrentJobs: 4,
+		QueueTimeoutS:     30,
 	}
 }
 
@@ -188,5 +189,32 @@ func TestRunHandler_OversizeBody(t *testing.T) {
 
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("expected 400, got %d", w.Code)
+	}
+}
+
+func TestRunHandler_QueueTimeout(t *testing.T) {
+	cfg := testConfig()
+	// Set MaxConcurrentJobs to 0 to make the semaphore channel unbuffered/blocking.
+	// Set QueueTimeoutS to a very small value for the test.
+	cfg.MaxConcurrentJobs = 0
+	cfg.QueueTimeoutS = 1
+
+	s := stats.NewStats()
+	h := handler.NewRunHandler(cfg, s)
+
+	body := `{"language":"py3","source":"print()","tests":[{"stdin":"","expected_stdout":""}]}`
+	req := httptest.NewRequest(http.MethodPost, "/run", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	// This should timeout after 1s because MaxConcurrentJobs=0 
+	// mean there is no space in the unbuffered channel.
+	h.ServeHTTP(w, req)
+
+	if w.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected 503, got %d", w.Code)
+	}
+	if !strings.Contains(w.Body.String(), "queue_timeout") {
+		t.Errorf("expected error code queue_timeout, got %s", w.Body.String())
 	}
 }

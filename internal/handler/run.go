@@ -57,6 +57,16 @@ func NewRunHandler(cfg *config.Config, s *stats.Stats) http.HandlerFunc {
 			// Acquired slot
 		case <-r.Context().Done():
 			return
+		case <-time.After(time.Duration(cfg.QueueTimeoutS) * time.Second):
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusServiceUnavailable)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error": map[string]string{
+					"code":    "queue_timeout",
+					"message": "server is busy, try again later",
+				},
+			})
+			return
 		}
 
 		s.InFlight.Add(1)

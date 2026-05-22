@@ -11,11 +11,13 @@ import (
 type Config struct {
 	Languages         map[string]Language
 	MaxConcurrentJobs int
+	QueueTimeoutS     int
 }
 
 type yamlRoot struct {
 	Languages         []Language `yaml:"languages"`
 	MaxConcurrentJobs int        `yaml:"max_concurrent_jobs"`
+	QueueTimeoutS     int        `yaml:"queue_timeout_s"`
 }
 
 func Load(path string) (*Config, error) {
@@ -38,9 +40,15 @@ func Load(path string) (*Config, error) {
 		maxJobs = runtime.NumCPU()
 	}
 
+	queueTimeout := root.QueueTimeoutS
+	if queueTimeout <= 0 {
+		queueTimeout = 30
+	}
+
 	cfg := &Config{
 		Languages:         make(map[string]Language, len(root.Languages)),
 		MaxConcurrentJobs: maxJobs,
+		QueueTimeoutS:     queueTimeout,
 	}
 	for _, lang := range root.Languages {
 		if lang.ID == "" {
