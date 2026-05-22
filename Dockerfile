@@ -35,6 +35,7 @@ RUN apt-get update && apt-get install -y \
     libcap2 \
     libnl-route-3-200 \
     libprotobuf32 \
+    nodejs \
     openjdk-17-jdk-headless \
     python3 \
     rustc \

@@ -64,4 +64,10 @@ else
     exit 1
 fi
 
+# 6. C
+test_lang "c" $'#include <stdio.h>\nint main() { printf("hello\\n"); return 0; }' "accepted"
+
+# 7. JavaScript
+test_lang "js" "console.log('hello')" "accepted"
+
 echo "--- All integration tests passed! ---"

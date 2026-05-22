@@ -61,3 +61,27 @@ languages:
       cmd: /usr/bin/java
       args: ["-Xmx512m", "-XX:-UseCompressedOops", "-XX:-UseCompressedClassPointers", "-cp", ".", "{{artifact}}"]
       limits: { wall_time_s: 15, memory_kb: 2097152, max_processes: 64 }
+
+  - id: c
+    name: C
+    source_filename: solution.c
+    artifact: solution
+    version_probe: "/usr/bin/gcc --version"
+    build:
+      cmd: /usr/bin/gcc
+      args: ["{{flags}}", "-o", "{{artifact}}", "{{source}}"]
+      limits: { wall_time_s: 3, memory_kb: 1048576, max_processes: 100 }
+      flag_allowlist: ["-O0","-O1","-O2","-O3","-Wall","-Wextra","-std=*"]
+    run:
+      cmd: ./{{artifact}}
+      args: []
+      limits: { wall_time_s: 3, memory_kb: 524288, max_processes: 64 }
+
+  - id: js
+    name: JavaScript (Node)
+    source_filename: solution.js
+    version_probe: "/usr/bin/node --version"
+    run:
+      cmd: /usr/bin/node
+      args: ["{{source}}"]
+      limits: { wall_time_s: 9, memory_kb: 1048576, max_processes: 100 }
