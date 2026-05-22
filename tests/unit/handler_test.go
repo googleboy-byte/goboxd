@@ -41,6 +41,7 @@ func testConfig() *config.Config {
 				},
 			},
 		},
+		MaxConcurrentJobs: 4,
 	}
 }
 

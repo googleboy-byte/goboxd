@@ -121,7 +121,16 @@ func NewRunHandler(cfg *config.Config, s *stats.Stats) http.HandlerFunc {
 			cp := *lang.Build
 			lang.Build = &cp
 			if req.Build.Limits != nil {
-				lang.Build.Limits = *req.Build.Limits
+				l := req.Build.Limits
+				if l.WallTimeS > 0 {
+					lang.Build.Limits.WallTimeS = l.WallTimeS
+				}
+				if l.MemoryKB > 0 {
+					lang.Build.Limits.MemoryKB = l.MemoryKB
+				}
+				if l.MaxProcesses > 0 {
+					lang.Build.Limits.MaxProcesses = l.MaxProcesses
+				}
 			}
 		}
 
@@ -133,8 +142,16 @@ func NewRunHandler(cfg *config.Config, s *stats.Stats) http.HandlerFunc {
 			}
 			runFlags = req.Run.Flags
 			if req.Run.Limits != nil {
-				// Deep copy Run (embedded in lang)
-				lang.Run.Limits = *req.Run.Limits
+				l := req.Run.Limits
+				if l.WallTimeS > 0 {
+					lang.Run.Limits.WallTimeS = l.WallTimeS
+				}
+				if l.MemoryKB > 0 {
+					lang.Run.Limits.MemoryKB = l.MemoryKB
+				}
+				if l.MaxProcesses > 0 {
+					lang.Run.Limits.MaxProcesses = l.MaxProcesses
+				}
 			}
 		}
 

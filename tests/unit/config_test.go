@@ -108,4 +108,48 @@ languages:
 			t.Error("expected error for language missing ID, got nil")
 		}
 	})
+
+	t.Run("Language with zero wall_time_s returns an error", func(t *testing.T) {
+		zeroLimitContent := `
+languages:
+  - id: py3
+    name: Python 3
+    source_filename: solution.py
+    run:
+      cmd: /usr/bin/python3
+      limits:
+        wall_time_s: 0
+        memory_kb: 102400
+        max_processes: 100
+`
+		zeroLimitTmpfile, _ := os.CreateTemp("", "zero_limit_languages.yaml")
+		defer os.Remove(zeroLimitTmpfile.Name())
+		zeroLimitTmpfile.Write([]byte(zeroLimitContent))
+		zeroLimitTmpfile.Close()
+
+		_, err := config.Load(zeroLimitTmpfile.Name())
+		if err == nil {
+			t.Error("expected error for language with zero wall_time_s, got nil")
+		}
+	})
+
+	t.Run("Language with missing limits returns an error", func(t *testing.T) {
+		missingLimitsContent := `
+languages:
+  - id: py3
+    name: Python 3
+    source_filename: solution.py
+    run:
+      cmd: /usr/bin/python3
+`
+		missingLimitsTmpfile, _ := os.CreateTemp("", "missing_limits_languages.yaml")
+		defer os.Remove(missingLimitsTmpfile.Name())
+		missingLimitsTmpfile.Write([]byte(missingLimitsContent))
+		missingLimitsTmpfile.Close()
+
+		_, err := config.Load(missingLimitsTmpfile.Name())
+		if err == nil {
+			t.Error("expected error for language with missing limits, got nil")
+		}
+	})
 }

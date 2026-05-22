@@ -46,10 +46,34 @@ func Load(path string) (*Config, error) {
 		if lang.ID == "" {
 			return nil, fmt.Errorf("language missing id")
 		}
+
+		// Validate limits
+		if err := validateLimits(lang.Run.Limits); err != nil {
+			return nil, fmt.Errorf("language %s: run limits: %w", lang.ID, err)
+		}
+		if lang.Build != nil {
+			if err := validateLimits(lang.Build.Limits); err != nil {
+				return nil, fmt.Errorf("language %s: build limits: %w", lang.ID, err)
+			}
+		}
+
 		cfg.Languages[lang.ID] = lang
 	}
 
 	return cfg, nil
+}
+
+func validateLimits(l Limits) error {
+	if l.WallTimeS <= 0 {
+		return fmt.Errorf("wall_time_s must be > 0")
+	}
+	if l.MemoryKB <= 0 {
+		return fmt.Errorf("memory_kb must be > 0")
+	}
+	if l.MaxProcesses <= 0 {
+		return fmt.Errorf("max_processes must be > 0")
+	}
+	return nil
 }
 
 func (c *Config) GetLanguage(id string) (Language, error) {
