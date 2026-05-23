@@ -3,7 +3,7 @@
 The following benchmarks were obtained using `hey` against a local instance of `goboxd` running in a privileged Docker container.
 
 ## Environment
-- **CPU**: 4-core host (assumed)
+- **CPU**: 4-core host
 - **Concurrency Limit**: Defaults to number of CPU cores (Semaphore-based)
 - **Load Test Script**: `tests/load/load.sh`
 
