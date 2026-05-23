@@ -93,12 +93,18 @@ func NewRunHandler(cfg *config.Config, s *stats.Stats) http.HandlerFunc {
 			<-sem
 		}()
 
-		r.Body = http.MaxBytesReader(w, r.Body, 256*1024)
+		r.Body = http.MaxBytesReader(w, r.Body, 512*1024)
 
 		var req Request
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			status = "invalid_json"
 			sendError(w, "invalid_json", err.Error())
+			return
+		}
+
+		if req.Language == "" {
+			status = "bad_request"
+			sendError(w, "bad_request", "language is required")
 			return
 		}
 		langID = req.Language
@@ -235,6 +241,10 @@ func NewRunHandler(cfg *config.Config, s *stats.Stats) http.HandlerFunc {
 				Stdout:     runResult.Build.Stdout,
 				Stderr:     runResult.Build.Stderr,
 				DurationMs: runResult.Build.DurationMs,
+			}
+		} else {
+			resp.Build = &BuildResult{
+				Status: "ok",
 			}
 		}
 

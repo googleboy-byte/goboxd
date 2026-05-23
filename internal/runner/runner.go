@@ -131,7 +131,7 @@ func buildArtifact(lang config.Language, workdir string, extraFlags []string) Bu
 	duration := time.Since(start).Milliseconds()
 
 	status := "ok"
-	if err != nil {
+	if err != nil || duration >= int64(lang.Build.Limits.WallTimeS)*1000 {
 		status = "failed"
 	}
 
@@ -199,7 +199,7 @@ func runTestCase(lang config.Language, workdir string, runCmd string, runArgs []
 	waitErr := cmd.Wait()
 	duration := time.Since(start).Milliseconds()
 
-	if ctx.Err() == context.DeadlineExceeded {
+	if ctx.Err() == context.DeadlineExceeded || duration >= int64(lang.Run.Limits.WallTimeS)*1000 {
 		return TestResult{Status: "time_exceeded", DurationMs: duration}
 	}
 

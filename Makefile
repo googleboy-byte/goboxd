@@ -36,6 +36,9 @@ integration:
 	@curl -s -o /dev/null --connect-timeout 2 $(SERVER_URL)/healthz || (echo "Error: Server is not running at $(SERVER_URL). Run 'make run' first." && exit 1)
 	bash tests/integration/run_all.sh $(SERVER_URL)
 
+corpus:
+	bash tests/corpus/run_corpus.sh $(SERVER_URL)
+
 load:
 	@curl -s -o /dev/null --connect-timeout 2 $(SERVER_URL)/healthz || (echo "Error: Server is not running. Run 'make run' first." && exit 1)
 	@if ! command -v hey >/dev/null 2>&1; then \
