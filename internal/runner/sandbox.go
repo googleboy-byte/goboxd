@@ -37,6 +37,11 @@ func buildNsjailArgsInternal(limits config.Limits, workdir string, cmd string, a
 		"--proc_path", "/proc",
 		"--tmpfsmount", "/tmp",
 		"--env", "PATH=/usr/bin:/bin",
+
+		// Cgroup memory tracking
+		"--detect_cgroupv2",
+		"--cgroup_mem_max", fmt.Sprintf("%d", limits.MemoryKB*1024), // Bytes
+
 		"--", // everything after is the command
 	}
 	res = append(res, cmd)

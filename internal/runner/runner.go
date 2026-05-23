@@ -3,11 +3,13 @@ package runner
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/thesouldev/goboxd/internal/config"
@@ -177,6 +179,39 @@ func runTestCase(lang config.Language, workdir string, runCmd string, runArgs []
 	const limit = 1024 * 64
 	const marker = "\n[TRUNCATED]\n"
 
+	// Monitor peak memory by scanning for NSJAIL.* cgroups
+	var memoryPeakKB int64
+	monitorCtx, monitorCancel := context.WithCancel(context.Background())
+	defer monitorCancel()
+	go func() {
+		ticker := time.NewTicker(10 * time.Millisecond)
+		defer ticker.Stop()
+		cgroupBase := "/sys/fs/cgroup"
+		for {
+			select {
+			case <-monitorCtx.Done():
+				return
+			case <-ticker.C:
+				entries, _ := os.ReadDir(cgroupBase)
+				for _, e := range entries {
+					if !e.IsDir() || !strings.HasPrefix(e.Name(), "NSJAIL.") {
+						continue
+					}
+
+					peakPath := filepath.Join(cgroupBase, e.Name(), "memory.peak")
+					data, err := os.ReadFile(peakPath)
+					if err == nil {
+						var peakBytes int64
+						fmt.Sscanf(strings.TrimSpace(string(data)), "%d", &peakBytes)
+						if peakBytes/1024 > atomic.LoadInt64(&memoryPeakKB) {
+							atomic.StoreInt64(&memoryPeakKB, peakBytes/1024)
+						}
+					}
+				}
+			}
+		}
+	}()
+
 	go func() {
 		n, _ := io.Copy(&stdout, io.LimitReader(stdoutPipe, limit))
 		if n >= limit {
@@ -199,8 +234,45 @@ func runTestCase(lang config.Language, workdir string, runCmd string, runArgs []
 	waitErr := cmd.Wait()
 	duration := time.Since(start).Milliseconds()
 
+	// Final scan before nsjail tears down the cgroup
+	entries, _ := os.ReadDir("/sys/fs/cgroup")
+	for _, e := range entries {
+		if !e.IsDir() || !strings.HasPrefix(e.Name(), "NSJAIL.") {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join("/sys/fs/cgroup", e.Name(), "memory.peak"))
+		if err == nil {
+			var peakBytes int64
+			fmt.Sscanf(strings.TrimSpace(string(data)), "%d", &peakBytes)
+			if peakBytes/1024 > atomic.LoadInt64(&memoryPeakKB) {
+				atomic.StoreInt64(&memoryPeakKB, peakBytes/1024)
+			}
+		}
+	}
+	monitorCancel()
+
+	peakKB := atomic.LoadInt64(&memoryPeakKB)
+
 	if ctx.Err() == context.DeadlineExceeded || duration >= int64(lang.Run.Limits.WallTimeS)*1000 {
-		return TestResult{Status: "time_exceeded", DurationMs: duration}
+		return TestResult{Status: "time_exceeded", DurationMs: duration, MemoryPeakKB: peakKB}
+	}
+
+	// Detect memory_exceeded: process failed and peak is near the limit OR stderr contains OOM signatures
+	limitKB := int64(lang.Run.Limits.MemoryKB)
+	stderrStr := stderr.String()
+	isOOM := (waitErr != nil && peakKB >= limitKB*95/100) ||
+		strings.Contains(stderrStr, "bad_alloc") ||
+		strings.Contains(stderrStr, "MemoryError") ||
+		strings.Contains(stderrStr, "OutOfMemoryError")
+
+	if isOOM {
+		return TestResult{
+			Status:       "memory_exceeded",
+			Stdout:       stdout.String(),
+			Stderr:       stderrStr,
+			DurationMs:   duration,
+			MemoryPeakKB: peakKB,
+		}
 	}
 
 	status := "accepted"
@@ -220,10 +292,11 @@ func runTestCase(lang config.Language, workdir string, runCmd string, runArgs []
 	}
 
 	return TestResult{
-		Status:     status,
-		Stdout:     stdout.String(),
-		Stderr:     stderr.String(),
-		DurationMs: duration,
+		Status:       status,
+		Stdout:       stdout.String(),
+		Stderr:       stderr.String(),
+		DurationMs:   duration,
+		MemoryPeakKB: peakKB,
 	}
 }
 

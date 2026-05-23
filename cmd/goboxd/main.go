@@ -22,7 +22,41 @@ var (
 	commit  = "none"
 )
 
+func initCgroups() {
+	if _, err := os.Stat("/sys/fs/cgroup/cgroup.subtree_control"); err != nil {
+		slog.Warn("cgroup v2 subtree control not found, skipping initialization")
+		return
+	}
+
+	// Move current process to a sub-cgroup to allow subtree control in root
+	if err := os.MkdirAll("/sys/fs/cgroup/goboxd-node", 0755); err != nil {
+		slog.Error("failed to create goboxd-node cgroup", "error", err)
+		return
+	}
+	if err := os.WriteFile("/sys/fs/cgroup/goboxd-node/cgroup.procs", []byte(fmt.Sprintf("%d\n", os.Getpid())), 0644); err != nil {
+		slog.Error("failed to move to goboxd-node cgroup", "error", err)
+		return
+	}
+
+	// Enable memory and pids controllers in root
+	if err := os.WriteFile("/sys/fs/cgroup/cgroup.subtree_control", []byte("+memory +pids\n"), 0644); err != nil {
+		slog.Error("failed to enable memory/pids in root", "error", err)
+		return
+	}
+
+	// Prepare goboxd parent for nsjail with memory enabled
+	if err := os.MkdirAll("/sys/fs/cgroup/goboxd", 0755); err != nil {
+		slog.Error("failed to create goboxd parent cgroup", "error", err)
+		return
+	}
+	if err := os.WriteFile("/sys/fs/cgroup/goboxd/cgroup.subtree_control", []byte("+memory +pids\n"), 0644); err != nil {
+		slog.Error("failed to enable memory/pids in goboxd parent", "error", err)
+	}
+	slog.Info("cgroup initialization successful")
+}
+
 func main() {
+	initCgroups()
 	port := flag.Int("port", 8080, "Port to listen on")
 	configPath := flag.String("config", "languages.yaml", "path to languages.yaml")
 	flag.Parse()

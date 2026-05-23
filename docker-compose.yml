@@ -2,6 +2,7 @@ services:
   goboxd:
     build: .
     privileged: true
+    cgroupns: host
     ports:
       - "8080:8080"
     restart: unless-stopped
