@@ -2,8 +2,12 @@
 set -e
 
 echo "--- Installing dependencies ---"
-sudo apt update
-sudo apt install -y docker.io git make curl python3
+sudo apt-get update
+sudo apt-get install -y docker.io git make curl python3 jq
+
+echo "--- Starting Docker ---"
+sudo systemctl enable docker
+sudo systemctl start docker
 
 echo "--- Adding user to docker group ---"
 sudo usermod -aG docker $USER
@@ -13,5 +17,9 @@ git clone https://github.com/googleboy-byte/goboxd
 cd goboxd
 git checkout team/silverex
 
-echo "--- Done. Log out and back in for docker group to take effect ---"
-echo "--- Then run: cd goboxd && make run ---"
+echo ""
+echo "--- Setup complete ---"
+echo "Run the following to start:"
+echo "  newgrp docker"
+echo "  cd goboxd"
+echo "  make run"

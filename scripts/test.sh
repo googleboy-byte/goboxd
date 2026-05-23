@@ -17,12 +17,13 @@ check_field() {
     fi
 }
 
-echo "--- Waiting for server ---"
-for i in $(seq 1 10); do
-    curl -s -o /dev/null --connect-timeout 1 $SERVER/healthz && break
-    echo "Waiting..."
-    sleep 2
+echo "--- Waiting up to 10 min for server (first build is slow) ---"
+for i in $(seq 1 60); do
+    curl -s -o /dev/null --connect-timeout 2 $SERVER/healthz && break
+    echo "Waiting... ($i/60)"
+    sleep 10
 done
+curl -sf $SERVER/healthz > /dev/null || { echo "Server never came up"; exit 1; }
 
 echo ""
 echo "--- Health endpoints ---"
@@ -80,6 +81,40 @@ R=$(curl -s -X POST -H "Content-Type: application/json" -d '{
 }' $SERVER/run)
 check_field "rust accepted" "accepted" $(echo $R | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])")
 
+# java accepted
+R=$(curl -s -X POST -H "Content-Type: application/json" -d '{
+  "language":"java",
+  "source":"public class Hello { public static void main(String[] a) { System.out.println(\"hello\"); } }",
+  "source_filename":"Hello.java",
+  "artifact_filename":"Hello",
+  "tests":[{"stdin":"","expected_stdout":"hello\n"}]
+}' $SERVER/run)
+check_field "java accepted" "accepted" $(echo $R | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])")
+
+# c accepted
+R=$(curl -s -X POST -H "Content-Type: application/json" -d '{
+  "language":"c",
+  "source":"#include<stdio.h>\nint main(){printf(\"hello\\n\");return 0;}",
+  "tests":[{"stdin":"","expected_stdout":"hello\n"}]
+}' $SERVER/run)
+check_field "c accepted" "accepted" $(echo $R | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])")
+
+# js accepted
+R=$(curl -s -X POST -H "Content-Type: application/json" -d '{
+  "language":"js",
+  "source":"console.log(\"hello\")",
+  "tests":[{"stdin":"","expected_stdout":"hello\n"}]
+}' $SERVER/run)
+check_field "js accepted" "accepted" $(echo $R | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])")
+
+# verilog accepted
+R=$(curl -s -X POST -H "Content-Type: application/json" -d '{
+  "language":"verilog",
+  "source":"module main; initial begin $display(\"hello\"); $finish; end endmodule",
+  "tests":[{"stdin":"","expected_stdout":"hello\n"}]
+}' $SERVER/run)
+check_field "verilog accepted" "accepted" $(echo $R | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])")
+
 echo ""
 echo "--- Error paths ---"
 
@@ -112,6 +147,22 @@ R=$(curl -s -X POST -H "Content-Type: application/json" -d '{
 CODE=$(echo $R | python3 -c "import sys,json; print(json.load(sys.stdin)['error']['code'])")
 check_field "path traversal 400" "invalid_filename" "$CODE"
 
+# missing source
+R=$(curl -s -X POST -H "Content-Type: application/json" -d '{
+  "language":"py3",
+  "tests":[{"stdin":"","expected_stdout":""}]
+}' $SERVER/run)
+CODE=$(echo $R | python3 -c "import sys,json; print(json.load(sys.stdin)['error']['code'])")
+check_field "missing source 400" "bad_request" "$CODE"
+
+# missing tests
+R=$(curl -s -X POST -H "Content-Type: application/json" -d '{
+  "language":"py3",
+  "source":"print(1)"
+}' $SERVER/run)
+CODE=$(echo $R | python3 -c "import sys,json; print(json.load(sys.stdin)['error']['code'])")
+check_field "missing tests 400" "bad_request" "$CODE"
+
 echo ""
 echo "--- Security ---"
 
@@ -133,6 +184,15 @@ R=$(curl -s -X POST -H "Content-Type: application/json" -d '{
   "tests":[{"stdin":"","expected_stdout":"hi"}]
 }' $SERVER/run)
 check_field "per-request limit override" "accepted" $(echo $R | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])")
+
+# memory tracking non-zero
+R=$(curl -s -X POST -H "Content-Type: application/json" -d '{
+  "language":"cpp",
+  "source":"#include<iostream>\n#include<vector>\nint main(){std::vector<int>v(1000000);std::cout<<\"hi\"<<std::endl;}",
+  "tests":[{"stdin":"","expected_stdout":"hi\n"}]
+}' $SERVER/run)
+MEM=$(echo $R | python3 -c "import sys,json; print(json.load(sys.stdin)['tests'][0]['memory_peak_kb'])")
+[ "$MEM" -gt 0 ] && pass "memory_peak_kb non-zero ($MEM KB)" || fail "memory_peak_kb is zero" "$R"
 
 echo ""
 echo "--- ALL TESTS PASSED ---"
