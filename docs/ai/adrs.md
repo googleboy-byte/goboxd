@@ -128,3 +128,18 @@ Silent cap using `min()`.
 
 **Rationale:**
 Returning a new error code would deviate from the spec's expected behavioral patterns. A silent cap ensures that clients can only *tighten* resource constraints, never loosen them. This prevents a malicious or misconfigured client from exhausting the server's semaphore slots while still allowing for more restrictive per-request limits.
+
+## Inclusion of queue_size in stats for observability
+
+**Context:**
+The standard `/info` stats provide visibility into in-flight jobs and total counts. However, they do not show how many requests are currently waiting in the semaphore queue. During load testing, this makes it difficult to distinguish between a system that is fully saturated vs. one that is nearing its queue timeout limits.
+
+**Options considered:**
+1. Follow spec exactly (exclude queue size)
+2. Add `queue_size` as an additive metric
+
+**Decision:**
+Add `queue_size` to internal stats and the `/info` endpoint.
+
+**Rationale:**
+This is a purely additive improvement that enhances the operational observability of the server. While not part of the core spec, it provides valuable real-time feedback during performance and load testing, showing the actual depth of the request queue without breaking any existing specification requirements.

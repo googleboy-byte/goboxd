@@ -69,12 +69,16 @@ func NewRunHandler(cfg *config.Config, s *stats.Stats) http.HandlerFunc {
 		}()
 
 		// 1. Queueing
+		s.QueueSize.Add(1)
 		select {
 		case sem <- struct{}{}:
+			s.QueueSize.Add(-1)
 			// Acquired slot
 		case <-r.Context().Done():
+			s.QueueSize.Add(-1)
 			return
 		case <-time.After(time.Duration(cfg.QueueTimeoutS) * time.Second):
+			s.QueueSize.Add(-1)
 			status = "queue_timeout"
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusServiceUnavailable)

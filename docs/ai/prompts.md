@@ -89,3 +89,14 @@ AI confirmed this is a valid concern. Suggested using `min(overrideValue, defaul
 
 **What we used / didn't use:**
 Adopted the `min` logic for `WallTimeS`, `MemoryKB`, and `MaxProcesses` in the request handler.
+
+## 2026-05-24 · queue_size counter for observability
+
+**Prompt:**
+Can we add a `queue_size` counter to the `/info` stats to track how many requests are currently queued waiting for a semaphore slot? It's not in the spec but it adds real observability.
+
+**Response summary:**
+AI agreed that tracking queue depth is a valuable operational improvement. Suggested adding an atomic counter to the `stats` package and incrementing/decrementing it around the semaphore acquisition logic. This provides visibility into system load beyond just active (in-flight) jobs.
+
+**What we used / didn't use:**
+Implemented the `QueueSize` atomic counter and exposed it in the `/info` response under `stats.queue_size`.

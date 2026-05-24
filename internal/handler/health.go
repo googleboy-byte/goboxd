@@ -63,6 +63,7 @@ type LimitsInfo struct {
 
 type StatsInfo struct {
 	InFlight          int64      `json:"in_flight_jobs"`
+	QueueSize         int64      `json:"queue_size"`
 	JobsTotal         int64      `json:"jobs_total"`
 	JobsFailed        int64      `json:"jobs_failed_internal"`
 	LastInternalErrAt *time.Time `json:"last_internal_error_at"`
@@ -203,6 +204,7 @@ func (h *HealthHandler) Info(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp.Stats.InFlight = h.Stats.InFlight.Load()
+	resp.Stats.QueueSize = h.Stats.QueueSize.Load()
 	resp.Stats.JobsTotal = h.Stats.JobsTotal.Load()
 	resp.Stats.JobsFailed = h.Stats.JobsFailedInternal.Load()
 	resp.Stats.LastInternalErrAt = h.Stats.LastInternalErrAt.Load()
