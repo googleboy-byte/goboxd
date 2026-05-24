@@ -78,3 +78,14 @@ AI suggested polling `/sys/fs/cgroup/NSJAIL.*/memory.peak` every 10ms during exe
 
 **What we used / didn't use:**
 Adopted with graceful degradation: if cgroup path not found, returns `memory_peak_kb: 0` rather than erroring.
+
+## 2026-05-24 · Silent limit caps for DoS prevention
+
+**Prompt:**
+Can we implement a silent cap on language limit overrides so clients cannot use them as a DoS vector? Without a cap, a client could request a huge `wall_time_s` and tie up a semaphore slot for an hour.
+
+**Response summary:**
+AI confirmed this is a valid concern. Suggested using `min(overrideValue, defaultValue)` for resource limits. This ensures clients can only tighten limits, never loosen them, closing the DoS vector without requiring new error codes or violating the spec.
+
+**What we used / didn't use:**
+Adopted the `min` logic for `WallTimeS`, `MemoryKB`, and `MaxProcesses` in the request handler.

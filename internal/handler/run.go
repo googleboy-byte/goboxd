@@ -173,13 +173,13 @@ func NewRunHandler(cfg *config.Config, s *stats.Stats) http.HandlerFunc {
 			if req.Build.Limits != nil {
 				l := req.Build.Limits
 				if l.WallTimeS > 0 {
-					lang.Build.Limits.WallTimeS = l.WallTimeS
+					lang.Build.Limits.WallTimeS = min(l.WallTimeS, lang.Build.Limits.WallTimeS)
 				}
 				if l.MemoryKB > 0 {
-					lang.Build.Limits.MemoryKB = l.MemoryKB
+					lang.Build.Limits.MemoryKB = min(l.MemoryKB, lang.Build.Limits.MemoryKB)
 				}
 				if l.MaxProcesses > 0 {
-					lang.Build.Limits.MaxProcesses = l.MaxProcesses
+					lang.Build.Limits.MaxProcesses = min(l.MaxProcesses, lang.Build.Limits.MaxProcesses)
 				}
 			}
 		}
@@ -195,13 +195,13 @@ func NewRunHandler(cfg *config.Config, s *stats.Stats) http.HandlerFunc {
 			if req.Run.Limits != nil {
 				l := req.Run.Limits
 				if l.WallTimeS > 0 {
-					lang.Run.Limits.WallTimeS = l.WallTimeS
+					lang.Run.Limits.WallTimeS = min(l.WallTimeS, lang.Run.Limits.WallTimeS)
 				}
 				if l.MemoryKB > 0 {
-					lang.Run.Limits.MemoryKB = l.MemoryKB
+					lang.Run.Limits.MemoryKB = min(l.MemoryKB, lang.Run.Limits.MemoryKB)
 				}
 				if l.MaxProcesses > 0 {
-					lang.Run.Limits.MaxProcesses = l.MaxProcesses
+					lang.Run.Limits.MaxProcesses = min(l.MaxProcesses, lang.Run.Limits.MaxProcesses)
 				}
 			}
 		}

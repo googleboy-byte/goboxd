@@ -112,3 +112,19 @@ The spec identified UID collision under load as a security hole. The reference i
 
 **Rationale:**
 `os.MkdirTemp` uses the underlying OS to guarantee uniqueness atomically. No counter, no retry, no collision possible. Simpler and more correct than a manual scheme.
+
+## Silent limit caps on resource overrides
+
+**Context:**
+The core specification allows clients to override resource limits via the request body. However, allowing arbitrary increases to `wall_time_s` or other limits creates a DoS vector by tying up concurrent execution slots indefinitely.
+
+**Options considered:**
+1. Allow arbitrary overrides (initial implementation)
+2. Return an error if overrides exceed language defaults
+3. Silent cap: Use `min(overrideValue, defaultValue)`
+
+**Decision:**
+Silent cap using `min()`.
+
+**Rationale:**
+Returning a new error code would deviate from the spec's expected behavioral patterns. A silent cap ensures that clients can only *tighten* resource constraints, never loosen them. This prevents a malicious or misconfigured client from exhausting the server's semaphore slots while still allowing for more restrictive per-request limits.
