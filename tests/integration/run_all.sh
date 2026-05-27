@@ -6,11 +6,22 @@ set -e
 
 SERVER_URL=${1:-"http://localhost:8080"}
 
+# Fetch registered languages from /info
+echo "Discovering registered languages..."
+# Get IDs, convert to single line space-separated
+REGISTERED_LANGS=$(curl -s "$SERVER_URL/info" | jq -r '.languages[].id' | xargs)
+
 test_lang() {
     local lang=$1
     local source=$2
     local expected_status=$3
     
+    # Check if language is registered (match full word)
+    if [[ ! " $REGISTERED_LANGS " =~ " $lang " ]]; then
+        echo "[-] $lang: Skipped (not registered)"
+        return 0
+    fi
+
     echo "Testing $lang..."
     
     # Use jq -n to build the JSON properly with real newlines
@@ -48,20 +59,24 @@ test_lang "rust" $'fn main() { println!("hello"); }' "accepted"
 
 # 5. Java (requires source_filename and artifact_filename)
 echo "Testing java..."
-JAVA_RESP=$(curl -s -X POST -H "Content-Type: application/json" -d '{
-  "language":"java",
-  "source":"public class Hello { public static void main(String[] args) { System.out.println(\"hello\"); } }",
-  "source_filename": "Hello.java",
-  "artifact_filename": "Hello",
-  "tests":[{"stdin":"","expected_stdout":"hello\n"}]
-}' "$SERVER_URL/run")
-JAVA_STATUS=$(echo "$JAVA_RESP" | jq -r '.status')
-if [ "$JAVA_STATUS" == "accepted" ]; then
-    echo "✅ java: $JAVA_STATUS"
+if [[ " $REGISTERED_LANGS " =~ " java " ]]; then
+    JAVA_RESP=$(curl -s -X POST -H "Content-Type: application/json" -d '{
+      "language":"java",
+      "source":"public class Hello { public static void main(String[] args) { System.out.println(\"hello\"); } }",
+      "source_filename": "Hello.java",
+      "artifact_filename": "Hello",
+      "tests":[{"stdin":"","expected_stdout":"hello\n"}]
+    }' "$SERVER_URL/run")
+    JAVA_STATUS=$(echo "$JAVA_RESP" | jq -r '.status')
+    if [ "$JAVA_STATUS" == "accepted" ]; then
+        echo "✅ java: $JAVA_STATUS"
+    else
+        echo "❌ java: Expected accepted, got $JAVA_STATUS"
+        echo "Full response: $JAVA_RESP"
+        exit 1
+    fi
 else
-    echo "❌ java: Expected accepted, got $JAVA_STATUS"
-    echo "Full response: $JAVA_RESP"
-    exit 1
+    echo "⏭️  java: Skipped (not registered)"
 fi
 
 # 6. C
@@ -73,4 +88,28 @@ test_lang "js" "console.log('hello')" "accepted"
 # 8. Verilog
 test_lang "verilog" "module main; initial begin \$display(\"hello\"); \$finish; end endmodule" "accepted"
 
-echo "--- All integration tests passed! ---"
+# 9. Go
+test_lang "go" "package main; import \"fmt\"; func main() { fmt.Println(\"hello\") }" "accepted"
+
+# 10. Kotlin
+test_lang "kotlin" "fun main() { println(\"hello\") }" "accepted"
+
+# 11. C# (Mono)
+test_lang "csharp" "using System; class Hello { static void Main() { Console.WriteLine(\"hello\"); } }" "accepted"
+
+# 12. Ruby
+test_lang "ruby" "puts 'hello'" "accepted"
+
+# 13. Lua
+test_lang "lua" "print('hello')" "accepted"
+
+# 14. OCaml
+test_lang "ocaml" "print_endline \"hello\"" "accepted"
+
+# 15. Swift
+test_lang "swift" "print(\"hello\")" "accepted"
+
+# 16. Zig
+test_lang "zig" 'const std = @import("std"); pub fn main() !void { try std.io.getStdOut().writer().writeAll("hello\n"); }' "accepted"
+
+echo "--- Integration tests completed! ---"

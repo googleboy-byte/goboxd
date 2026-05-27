@@ -20,7 +20,12 @@ func buildNsjailArgsInternal(limits config.Limits, workdir string, cmd string, a
 	res := []string{
 		"--mode", "o", // one-shot mode
 		"--time_limit", fmt.Sprintf("%d", limits.WallTimeS),
-		"--rlimit_as", fmt.Sprintf("%d", limits.MemoryKB/1024), // MB
+		"--rlimit_as", fmt.Sprintf("%d", func() int {
+			if limits.RLimitAS > 0 {
+				return limits.RLimitAS
+			}
+			return 512 // Default 512MB virtual address space
+		}()),
 		"--max_cpus", "1",
 		"--log", "/dev/null",
 		"--disable_proc",
@@ -34,8 +39,12 @@ func buildNsjailArgsInternal(limits config.Limits, workdir string, cmd string, a
 		"--bindmount_ro", "/lib:/lib",
 		"--bindmount_ro", "/lib64:/lib64",
 		"--bindmount_ro", "/etc:/etc",
+		// Anticipatory change for Go compiler support in Stage 2
+		"--bindmount_ro", "/dev/null:/dev/null",
 		"--proc_path", "/proc",
-		"--tmpfsmount", "/tmp",
+		// Anticipatory changes for Swift/Zig cache support in Stage 2
+		"--mount", "none:/tmp:tmpfs:size=268435456", // 256MB tmpfs
+		"--mount", "none:/root/.cache:tmpfs:size=268435456", // 256MB tmpfs
 		"--env", "PATH=/usr/bin:/bin",
 
 		// Cgroup memory tracking

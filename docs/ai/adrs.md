@@ -143,3 +143,18 @@ Add `queue_size` to internal stats and the `/info` endpoint.
 
 **Rationale:**
 This is a purely additive improvement that enhances the operational observability of the server. While not part of the core spec, it provides valuable real-time feedback during performance and load testing, showing the actual depth of the request queue without breaking any existing specification requirements.
+
+## Support for bonus programming languages
+
+**Context:**
+The hackathon scoring rewards projects that support languages beyond the core seven specified in the prompt. Supporting additional languages increases the platform's versatility and utility.
+
+**Options considered:**
+1. Stick to core seven languages
+2. Add bonus languages (Go, Kotlin, C#, Ruby, Lua, OCaml, Swift, Zig)
+
+**Decision:**
+Add 8 bonus languages.
+
+**Rationale:**
+Each additional language that passes its `/readyz` smoke probe adds one point to the final score. By expanding the `Dockerfile` and `languages.yaml` to support these 8 languages, we maximize the project's score while demonstrating the extensibility of the sandbox architecture.

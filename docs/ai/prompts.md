@@ -100,3 +100,25 @@ AI agreed that tracking queue depth is a valuable operational improvement. Sugge
 
 **What we used / didn't use:**
 Implemented the `QueueSize` atomic counter and exposed it in the `/info` response under `stats.queue_size`.
+
+## 2026-05-26 · Bonus language support (Rust, Go, Kotlin, C#, etc.)
+
+**Prompt:**
+Can we add support for bonus languages beyond the core seven? Rust, Go, Kotlin, C#, Ruby, Lua, OCaml, Swift, and Zig. Each one that passes its smoke probe on `/readyz` earns a point.
+
+**Response summary:**
+AI suggested adding configuration entries to `languages.yaml` for each new language and updating the `Dockerfile` to include the necessary compilers and runtimes. For languages not in standard Debian repos (Swift, Zig), suggested downloading official binaries.
+
+**What we used / didn't use:**
+Added 8 new languages (Go, Kotlin, C#, Ruby, Lua, OCaml, Swift, Zig) to `languages.yaml` and updated the `Dockerfile`. Swift and Zig are installed via official tarballs to ensure version stability.
+
+## 2026-05-26 · Advanced Zig Caching Issues
+
+**Prompt:**
+Zig is failing with `NoSpaceLeft` on `/tmp/zig-cache`. Is the `tmpfs` too small?
+
+**Response summary:**
+Zig requires significant cache space for compilation. Nsjail's default `tmpfs` size is 8MB, causing immediate failure. Suggested increasing `tmpfs` size or pre-warming the cache.
+
+**What we used / didn't use:**
+Increased `tmpfs` to 256MB for `/tmp` and `/root/.cache`. Successfully resolved Swift build issues using this method. However, Zig persistently required more space and was difficult to pre-warm in the slim container environment. Decided to disable Zig for now to prioritize the stability of the other languages.

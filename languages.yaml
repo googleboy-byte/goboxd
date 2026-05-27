@@ -56,11 +56,11 @@ languages:
     build:
       cmd: /usr/bin/javac
       args: ["-J-Xmx512m", "-J-XX:-UseCompressedOops", "-J-XX:-UseCompressedClassPointers", "-d", ".", "{{source}}"]
-      limits: { wall_time_s: 15, memory_kb: 2097152, max_processes: 100 }
+      limits: { wall_time_s: 15, memory_kb: 2097152, max_processes: 100, rlimit_as: 4096 }
     run:
       cmd: /usr/bin/java
       args: ["-Xmx512m", "-XX:-UseCompressedOops", "-XX:-UseCompressedClassPointers", "-cp", ".", "{{artifact}}"]
-      limits: { wall_time_s: 15, memory_kb: 2097152, max_processes: 64 }
+      limits: { wall_time_s: 15, memory_kb: 2097152, max_processes: 64, rlimit_as: 4096 }
 
   - id: c
     name: C
@@ -100,3 +100,101 @@ languages:
       cmd: /usr/bin/vvp
       args: ["{{artifact}}"]
       limits: { wall_time_s: 10, memory_kb: 262144, max_processes: 100 }
+
+  - id: go
+    name: Go
+    source_filename: solution.go
+    artifact: solution
+    version_probe: /usr/bin/go version
+    build:
+      cmd: /usr/bin/env
+      args: ["GO111MODULE=off", "CGO_ENABLED=0", "GOPATH=/tmp", "GOCACHE=/tmp/go-build", "go", "build", "-o", "{{artifact}}", "{{source}}"]
+      limits: { wall_time_s: 10, memory_kb: 1048576, max_processes: 100, rlimit_as: 4096 }
+    run:
+      cmd: ./{{artifact}}
+      limits: { wall_time_s: 5, memory_kb: 1048576, max_processes: 64, rlimit_as: 4096 }
+
+  - id: kotlin
+    name: Kotlin
+    source_filename: solution.kt
+    artifact: solution.jar
+    version_probe: /usr/bin/kotlinc -version
+    build:
+      cmd: /usr/bin/kotlinc
+      args: ["{{source}}", "-include-runtime", "-d", "{{artifact}}"]
+      limits: { wall_time_s: 20, memory_kb: 1048576, max_processes: 100, rlimit_as: 4096 }
+    run:
+      cmd: /usr/bin/java
+      args: ["-jar", "{{artifact}}"]
+      limits: { wall_time_s: 5, memory_kb: 524288, max_processes: 64, rlimit_as: 4096 }
+
+  - id: csharp
+    name: C# (Mono)
+    source_filename: solution.cs
+    artifact: solution.exe
+    version_probe: /usr/bin/mcs --version
+    build:
+      cmd: /usr/bin/mcs
+      args: ["-out:{{artifact}}", "{{source}}"]
+      limits: { wall_time_s: 10, memory_kb: 524288, max_processes: 100 }
+    run:
+      cmd: /usr/bin/mono
+      args: ["{{artifact}}"]
+      limits: { wall_time_s: 5, memory_kb: 262144, max_processes: 64 }
+
+  - id: ruby
+    name: Ruby
+    source_filename: solution.rb
+    version_probe: /usr/bin/ruby -v
+    run:
+      cmd: /usr/bin/ruby
+      args: ["{{source}}"]
+      limits: { wall_time_s: 5, memory_kb: 1048576, max_processes: 64 }
+
+  - id: lua
+    name: Lua
+    source_filename: solution.lua
+    version_probe: /usr/bin/lua5.4 -v
+    run:
+      cmd: /usr/bin/lua5.4
+      args: ["{{source}}"]
+      limits: { wall_time_s: 5, memory_kb: 102400, max_processes: 64 }
+
+  - id: ocaml
+    name: OCaml
+    source_filename: solution.ml
+    artifact: solution
+    version_probe: /usr/bin/ocamlc -version
+    build:
+      cmd: /usr/bin/ocamlopt
+      args: ["-o", "{{artifact}}", "{{source}}"]
+      limits: { wall_time_s: 10, memory_kb: 524288, max_processes: 100 }
+    run:
+      cmd: ./{{artifact}}
+      limits: { wall_time_s: 5, memory_kb: 102400, max_processes: 64 }
+
+  - id: swift
+    name: Swift
+    source_filename: solution.swift
+    artifact: solution
+    version_probe: /usr/local/bin/swift --version
+    build:
+      cmd: /usr/bin/env
+      args: ["HOME=/tmp", "XDG_CACHE_HOME=/tmp", "/usr/local/bin/swiftc", "-module-cache-path", "/tmp/swift-cache", "-Xcc", "-fmodules-cache-path=/tmp/clang-cache", "{{source}}", "-o", "{{artifact}}"]
+      limits: { wall_time_s: 15, memory_kb: 1048576, max_processes: 100, rlimit_as: 4096 }
+    run:
+      cmd: ./{{artifact}}
+      limits: { wall_time_s: 5, memory_kb: 262144, max_processes: 64, rlimit_as: 4096 }
+
+  # - id: zig
+  #   name: Zig
+  #   source_filename: solution.zig
+  #   artifact: solution
+  #   version_probe: /usr/local/bin/zig version
+  #   build:
+  #     cmd: /usr/bin/env
+  #     args: ["ZIG_GLOBAL_CACHE_DIR=/root/.cache/zig-cache", "/usr/local/bin/zig", "build-exe", "{{source}}", "-femit-bin={{artifact}}"]
+  #     limits: { wall_time_s: 30, memory_kb: 1048576, max_processes: 100 }
+  #   run:
+  #     cmd: ./{{artifact}}
+  #     limits: { wall_time_s: 5, memory_kb: 102400, max_processes: 64 }

@@ -4,6 +4,7 @@ type Limits struct {
 	WallTimeS    int `yaml:"wall_time_s" json:"wall_time_s"`
 	MemoryKB     int `yaml:"memory_kb" json:"memory_kb"`
 	MaxProcesses int `yaml:"max_processes" json:"max_processes"`
+	RLimitAS     int `yaml:"rlimit_as" json:"rlimit_as"` // Virtual memory limit in MB
 }
 
 type BuildConfig struct {

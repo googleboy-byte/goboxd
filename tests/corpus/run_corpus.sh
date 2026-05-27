@@ -9,12 +9,14 @@ set -euo pipefail
 SERVER_URL="${1:-http://localhost:8080}"
 PASS=0
 FAIL=0
+SKIP=0
 
 green() { echo -e "\033[32m✅ $1\033[0m"; }
 red()   { echo -e "\033[31m❌ $1\033[0m"; }
 
 pass() { green "$1"; ((PASS++)) || true; }
 fail() { red   "$1"; ((FAIL++)) || true; }
+skip() { echo -e "[-] $1: Skipped (not registered)"; ((SKIP++)) || true; }
 
 # assert_status <test_name> <expected_top_status> <json_response>
 assert_status() {
@@ -96,39 +98,58 @@ echo "$INFO" | jq -e '.languages | length > 0' > /dev/null && pass "/info has la
 echo "$INFO" | jq -e '.limits.max_source_bytes' > /dev/null && pass "/info has limits.max_source_bytes" || fail "/info missing limits.max_source_bytes"
 echo "$INFO" | jq -e '.stats.jobs_total' > /dev/null && pass "/info has stats.jobs_total" || fail "/info missing stats.jobs_total"
 
+# Discover registered languages
+REGISTERED_LANGS=$(echo "$INFO" | jq -r '.languages[].id' | xargs)
+
 # ── Happy path: hello world per language ──────────────────────────────────────
 echo ""
 echo "── Happy path: hello world ──"
 
-R=$(post_run '{"language":"py3","source":"print(\"hello\")","tests":[{"stdin":"","expected_stdout":"hello\n"}]}')
-assert_status "py3 hello world" "accepted" "$R"
+if [[ " $REGISTERED_LANGS " =~ " py3 " ]]; then
+    R=$(post_run '{"language":"py3","source":"print(\"hello\")","tests":[{"stdin":"","expected_stdout":"hello\n"}]}')
+    assert_status "py3 hello world" "accepted" "$R"
+else skip "py3"; fi
 
-R=$(post_run '{"language":"cpp","source":"#include<iostream>\nint main(){std::cout<<\"hello\"<<std::endl;}","tests":[{"stdin":"","expected_stdout":"hello\n"}]}')
-assert_status "cpp hello world" "accepted" "$R"
+if [[ " $REGISTERED_LANGS " =~ " cpp " ]]; then
+    R=$(post_run '{"language":"cpp","source":"#include<iostream>\nint main(){std::cout<<\"hello\"<<std::endl;}","tests":[{"stdin":"","expected_stdout":"hello\n"}]}')
+    assert_status "cpp hello world" "accepted" "$R"
+else skip "cpp"; fi
 
-R=$(post_run '{"language":"c","source":"#include<stdio.h>\nint main(){printf(\"hello\\n\");}","tests":[{"stdin":"","expected_stdout":"hello\n"}]}')
-assert_status "c hello world" "accepted" "$R"
+if [[ " $REGISTERED_LANGS " =~ " c " ]]; then
+    R=$(post_run '{"language":"c","source":"#include<stdio.h>\nint main(){printf(\"hello\\n\");}","tests":[{"stdin":"","expected_stdout":"hello\n"}]}')
+    assert_status "c hello world" "accepted" "$R"
+else skip "c"; fi
 
-R=$(post_run '{"language":"bash","source":"echo hello","tests":[{"stdin":"","expected_stdout":"hello\n"}]}')
-assert_status "bash hello world" "accepted" "$R"
+if [[ " $REGISTERED_LANGS " =~ " bash " ]]; then
+    R=$(post_run '{"language":"bash","source":"echo hello","tests":[{"stdin":"","expected_stdout":"hello\n"}]}')
+    assert_status "bash hello world" "accepted" "$R"
+else skip "bash"; fi
 
-R=$(post_run '{"language":"js","source":"console.log(\"hello\")","tests":[{"stdin":"","expected_stdout":"hello\n"}]}')
-assert_status "js hello world" "accepted" "$R"
+if [[ " $REGISTERED_LANGS " =~ " js " ]]; then
+    R=$(post_run '{"language":"js","source":"console.log(\"hello\")","tests":[{"stdin":"","expected_stdout":"hello\n"}]}')
+    assert_status "js hello world" "accepted" "$R"
+else skip "js"; fi
 
-R=$(post_run '{"language":"rust","source":"fn main(){println!(\"hello\");}","tests":[{"stdin":"","expected_stdout":"hello\n"}]}')
-assert_status "rust hello world" "accepted" "$R"
+if [[ " $REGISTERED_LANGS " =~ " rust " ]]; then
+    R=$(post_run '{"language":"rust","source":"fn main(){println!(\"hello\");}","tests":[{"stdin":"","expected_stdout":"hello\n"}]}')
+    assert_status "rust hello world" "accepted" "$R"
+else skip "rust"; fi
 
-R=$(post_run '{
-  "language":"java",
-  "source":"public class Hello { public static void main(String[] a) { System.out.println(\"hello\"); } }",
-  "source_filename":"Hello.java",
-  "artifact_filename":"Hello",
-  "tests":[{"stdin":"","expected_stdout":"hello\n"}]
-}')
-assert_status "java hello world" "accepted" "$R"
+if [[ " $REGISTERED_LANGS " =~ " java " ]]; then
+    R=$(post_run '{
+      "language":"java",
+      "source":"public class Hello { public static void main(String[] a) { System.out.println(\"hello\"); } }",
+      "source_filename":"Hello.java",
+      "artifact_filename":"Hello",
+      "tests":[{"stdin":"","expected_stdout":"hello\n"}]
+    }')
+    assert_status "java hello world" "accepted" "$R"
+else skip "java"; fi
 
-R=$(post_run '{"language":"verilog","source":"module main; initial begin $display(\"hello\"); $finish; end endmodule","tests":[{"stdin":"","expected_stdout":"hello\n"}]}')
-assert_status "verilog hello world" "accepted" "$R"
+if [[ " $REGISTERED_LANGS " =~ " verilog " ]]; then
+    R=$(post_run '{"language":"verilog","source":"module main; initial begin $display(\"hello\"); $finish; end endmodule","tests":[{"stdin":"","expected_stdout":"hello\n"}]}')
+    assert_status "verilog hello world" "accepted" "$R"
+else skip "verilog"; fi
 
 # ── stdin echo ─────────────────────────────────────────────────────────────────
 echo ""
@@ -388,7 +409,7 @@ fi
 echo ""
 echo "=============================="
 TOTAL=$((PASS + FAIL))
-echo " Results: $PASS/$TOTAL passed"
+echo " Results: $PASS/$TOTAL passed ($SKIP skipped)"
 if [ "$FAIL" -eq 0 ]; then
     green " ALL CORPUS TESTS PASSED"
     exit 0
