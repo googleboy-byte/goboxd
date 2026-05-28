@@ -154,7 +154,7 @@ The hackathon scoring rewards projects that support languages beyond the core se
 2. Add bonus languages (Go, Kotlin, C#, Ruby, Lua, OCaml, Swift, Zig)
 
 **Decision:**
-Add 8 bonus languages.
+Add 9 bonus languages.
 
 **Rationale:**
-Each additional language that passes its `/readyz` smoke probe adds one point to the final score. By expanding the `Dockerfile` and `languages.yaml` to support these 8 languages, we maximize the project's score while demonstrating the extensibility of the sandbox architecture.
+Each additional language that passes its `/readyz` smoke probe adds one point to the final score. By expanding the `Dockerfile` and `languages.yaml` to support these 9 languages (including Zig, enabled via virtual memory tuning), we maximize the project's score while demonstrating the extensibility of the sandbox architecture.

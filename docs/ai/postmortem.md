@@ -13,6 +13,7 @@ This document reflects on the development of `goboxd` Phase 1.
 - **Nsjail flag verification:** Several AI-suggested flags either do not exist or behave differently than documented. Each flag required individual verification against the nsjail source code or empirical testing.
 - **Output hang under load:** The interaction between `io.LimitReader`, pipe buffers, and `cmd.Wait()` required careful reasoning. The bug is non-obvious: a program producing more than the 64KiB cap blocks on write, which looks like a timeout rather than an output cap hit.
 - **Cgroup v2 memory tracking:** This required `--cgroupns=host`, path globbing for `NSJAIL.*` cgroup directories, and robust graceful degradation for environments where the cgroup hierarchy is not accessible.
+- **Virtual Memory Reservation (`rlimit_as`):** High-level runtimes (Go, Kotlin, Swift) and the Zig compiler often failed with opaque memory errors or signal kills. Increasing the virtual memory cap (`rlimit_as`) to 4GB while keeping the physical cap (`cgroup_mem_max`) low was critical for stabilization.
 
 ## Where AI gave confident wrong answers
 

@@ -121,4 +121,4 @@ Zig is failing with `NoSpaceLeft` on `/tmp/zig-cache`. Is the `tmpfs` too small?
 Zig requires significant cache space for compilation. Nsjail's default `tmpfs` size is 8MB, causing immediate failure. Suggested increasing `tmpfs` size or pre-warming the cache.
 
 **What we used / didn't use:**
-Increased `tmpfs` to 256MB for `/tmp` and `/root/.cache`. Successfully resolved Swift build issues using this method. However, Zig persistently required more space and was difficult to pre-warm in the slim container environment. Decided to disable Zig for now to prioritize the stability of the other languages.
+Increased `tmpfs` to 256MB for `/tmp` and `/root/.cache`. While Zig initially struggled, it was discovered that the root cause was virtual memory reservation (similar to Go/Swift). By increasing the build limit to `rlimit_as: 4096` (4GB), Zig now compiles successfully in ~5s within the sandbox. Zig is now fully enabled as the 16th language.

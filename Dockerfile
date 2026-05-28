@@ -58,10 +58,10 @@ RUN apt-get update && apt-get install -y \
 RUN wget -q https://download.swift.org/swift-6.0.2-release/debian12/swift-6.0.2-RELEASE/swift-6.0.2-RELEASE-debian12.tar.gz \
     && tar -xzf swift-6.0.2-RELEASE-debian12.tar.gz -C /usr/local --strip-components=2 \
     && rm swift-6.0.2-RELEASE-debian12.tar.gz
-# RUN wget -q https://ziglang.org/download/0.13.0/zig-linux-x86_64-0.13.0.tar.xz \
-#     && tar -xJf zig-linux-x86_64-0.13.0.tar.xz -C /usr/local \
-#     && ln -sf /usr/local/zig-linux-x86_64-0.13.0/zig /usr/local/bin/zig \
-#     && rm zig-linux-x86_64-0.13.0.tar.xz
+RUN wget -q https://ziglang.org/download/0.13.0/zig-linux-x86_64-0.13.0.tar.xz \
+    && tar -xJf zig-linux-x86_64-0.13.0.tar.xz -C /usr/local \
+    && ln -sf /usr/local/zig-linux-x86_64-0.13.0/zig /usr/local/bin/zig \
+    && rm zig-linux-x86_64-0.13.0.tar.xz
 
 COPY --from=nsjail-builder /nsjail-src/nsjail /usr/sbin/nsjail
 COPY --from=builder /build/goboxd /usr/local/bin/goboxd

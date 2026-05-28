@@ -1,4 +1,4 @@
-# Final Project Verification Log - Wed May 27 23:03:43 IST 2026
+# Final Project Verification Log (16 Languages) - Thu May 28 15:47:24 IST 2026
 
 ## 1. Make Lint
 Linting code...
@@ -26,28 +26,28 @@ go test -v ./tests/unit/...
     --- PASS: TestConfigLoad/Language_with_zero_wall_time_s_returns_an_error (0.00s)
     --- PASS: TestConfigLoad/Language_with_missing_limits_returns_an_error (0.00s)
 === RUN   TestRunHandler_UnknownLanguage
-2026/05/26 23:02:00 INFO request completed request_id=cc97faf9c77e8c1e language=fortran status=unknown_language duration_ms=0
+2026/05/28 15:43:40 INFO request completed request_id=a2400f4f0f1f9b2d language=fortran status=unknown_language duration_ms=0
 --- PASS: TestRunHandler_UnknownLanguage (0.00s)
 === RUN   TestRunHandler_MalformedJSON
-2026/05/26 23:02:00 INFO request completed request_id=9541d3a7cb27778c language=unknown status=invalid_json duration_ms=0
+2026/05/28 15:43:40 INFO request completed request_id=ae9c9a7e5df66cae language=unknown status=invalid_json duration_ms=0
 --- PASS: TestRunHandler_MalformedJSON (0.00s)
 === RUN   TestRunHandler_DisallowedFlag
-2026/05/26 23:02:00 INFO request completed request_id=c4cb3d8efe6c5e0e language=cpp status=disallowed_flag duration_ms=0
+2026/05/28 15:43:40 INFO request completed request_id=cac144b284a2f844 language=cpp status=disallowed_flag duration_ms=0
 --- PASS: TestRunHandler_DisallowedFlag (0.00s)
 === RUN   TestRunHandler_EmptySource
-2026/05/26 23:02:00 INFO request completed request_id=d2d754ef100e07bd language=py3 status=bad_request duration_ms=0
+2026/05/28 15:43:40 INFO request completed request_id=3c5317d9eda2ca60 language=py3 status=bad_request duration_ms=0
 --- PASS: TestRunHandler_EmptySource (0.00s)
 === RUN   TestRunHandler_TooManyTests
-2026/05/26 23:02:00 INFO request completed request_id=71f273d7f6acfa77 language=py3 status=bad_request duration_ms=0
+2026/05/28 15:43:40 INFO request completed request_id=a05db40664ae9a8c language=py3 status=bad_request duration_ms=0
 --- PASS: TestRunHandler_TooManyTests (0.00s)
 === RUN   TestRunHandler_NoTests
-2026/05/26 23:02:00 INFO request completed request_id=8657337bcca8b73e language=py3 status=bad_request duration_ms=0
+2026/05/28 15:43:40 INFO request completed request_id=d7aae57dfe2b5ea9 language=py3 status=bad_request duration_ms=0
 --- PASS: TestRunHandler_NoTests (0.00s)
 === RUN   TestRunHandler_OversizeBody
-2026/05/26 23:02:00 INFO request completed request_id=124337019bcfa8b6 language=py3 status=bad_request duration_ms=1
+2026/05/28 15:43:40 INFO request completed request_id=87bcea81b8d2b4c1 language=py3 status=bad_request duration_ms=1
 --- PASS: TestRunHandler_OversizeBody (0.00s)
 === RUN   TestRunHandler_QueueTimeout
-2026/05/26 23:02:01 INFO request completed request_id=333b5579a0ed2de8 language=unknown status=queue_timeout duration_ms=1000
+2026/05/28 15:43:41 INFO request completed request_id=4730155af56a1a91 language=unknown status=queue_timeout duration_ms=1000
 --- PASS: TestRunHandler_QueueTimeout (1.00s)
 === RUN   TestResolveString
 === RUN   TestResolveString/Single_placeholder
@@ -125,197 +125,57 @@ Verifying security holes for http://localhost:8080...
 [Hole 1] Path Traversal via SourceFilename...
   PASS: Rejected malicious SourceFilename
 [Hole 1] Path Traversal via ArtifactFilename...
-make: *** [Makefile:15: secure] Interrupt
-## 6. Make Load
-bash tests/load/load.sh http://localhost:8080
---- Concurrency 1 ---
-
-Summary:
-  Total:	5.2939 secs
-  Slowest:	1.7560 secs
-  Fastest:	0.0147 secs
-  Average:	0.0265 secs
-  Requests/sec:	37.7793
-  
-  Total data:	36802 bytes
-  Size/request:	184 bytes
-
-Response time histogram:
-  0.015 [1]	|
-  0.189 [198]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
-  0.363 [0]	|
-  0.537 [0]	|
-  0.711 [0]	|
-  0.885 [0]	|
-  1.059 [0]	|
-  1.234 [0]	|
-  1.408 [0]	|
-  1.582 [0]	|
-  1.756 [1]	|
-
-
-Latency distribution:
-  10%% in 0.0150 secs
-  25%% in 0.0158 secs
-  50%% in 0.0164 secs
-  75%% in 0.0173 secs
-  90%% in 0.0197 secs
-  95%% in 0.0286 secs
-  99%% in 0.0588 secs
-
-Details (average, fastest, slowest):
-  DNS+dialup:	0.0000 secs, 0.0000 secs, 0.0006 secs
-  DNS-lookup:	0.0000 secs, 0.0000 secs, 0.0002 secs
-  req write:	0.0000 secs, 0.0000 secs, 0.0001 secs
-  resp wait:	0.0264 secs, 0.0146 secs, 1.7550 secs
-  resp read:	0.0001 secs, 0.0000 secs, 0.0007 secs
-
-Status code distribution:
-  [200]	200 responses
-
-
-
---- Concurrency 10 ---
-
-Summary:
-  Total:	1.6030 secs
-  Slowest:	0.1739 secs
-  Fastest:	0.0221 secs
-  Average:	0.0787 secs
-  Requests/sec:	124.7629
-  
-  Total data:	36801 bytes
-  Size/request:	184 bytes
-
-Response time histogram:
-  0.022 [1]	|■
-  0.037 [0]	|
-  0.052 [5]	|■■■
-  0.068 [53]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■
-  0.083 [78]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
-  0.098 [37]	|■■■■■■■■■■■■■■■■■■■
-  0.113 [12]	|■■■■■■
-  0.128 [7]	|■■■■
-  0.144 [3]	|■■
-  0.159 [3]	|■■
-  0.174 [1]	|■
-
-
-Latency distribution:
-  10%% in 0.0587 secs
-  25%% in 0.0655 secs
-  50%% in 0.0742 secs
-  75%% in 0.0873 secs
-  90%% in 0.1035 secs
-  95%% in 0.1197 secs
-  99%% in 0.1581 secs
-
-Details (average, fastest, slowest):
-  DNS+dialup:	0.0001 secs, 0.0000 secs, 0.0022 secs
-  DNS-lookup:	0.0000 secs, 0.0000 secs, 0.0008 secs
-  req write:	0.0000 secs, 0.0000 secs, 0.0011 secs
-  resp wait:	0.0785 secs, 0.0212 secs, 0.1738 secs
-  resp read:	0.0001 secs, 0.0000 secs, 0.0009 secs
-
-Status code distribution:
-  [200]	200 responses
-
-
-
---- Concurrency 50 ---
-
-Summary:
-  Total:	2.0587 secs
-  Slowest:	0.6923 secs
-  Fastest:	0.0372 secs
-  Average:	0.4461 secs
-  Requests/sec:	97.1464
-  
-  Total data:	36805 bytes
-  Size/request:	184 bytes
-
-Response time histogram:
-  0.037 [1]	|■
-  0.103 [11]	|■■■■■■
-  0.168 [9]	|■■■■■
-  0.234 [8]	|■■■■
-  0.299 [11]	|■■■■■■
-  0.365 [11]	|■■■■■■
-  0.430 [13]	|■■■■■■■
-  0.496 [19]	|■■■■■■■■■■■
-  0.561 [72]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
-  0.627 [40]	|■■■■■■■■■■■■■■■■■■■■■■
-  0.692 [5]	|■■■
-
-
-Latency distribution:
-  10%% in 0.1643 secs
-  25%% in 0.3639 secs
-  50%% in 0.5239 secs
-  75%% in 0.5581 secs
-  90%% in 0.5787 secs
-  95%% in 0.5901 secs
-  99%% in 0.6575 secs
-
-Details (average, fastest, slowest):
-  DNS+dialup:	0.0005 secs, 0.0000 secs, 0.0040 secs
-  DNS-lookup:	0.0003 secs, 0.0000 secs, 0.0023 secs
-  req write:	0.0002 secs, 0.0000 secs, 0.0012 secs
-  resp wait:	0.4454 secs, 0.0362 secs, 0.6922 secs
-  resp read:	0.0001 secs, 0.0000 secs, 0.0016 secs
-
-Status code distribution:
-  [200]	200 responses
-
-
-
---- Concurrency 100 ---
-
-Summary:
-  Total:	2.5455 secs
-  Slowest:	1.5187 secs
-  Fastest:	0.0408 secs
-  Average:	0.9008 secs
-  Requests/sec:	78.5713
-  
-  Total data:	36811 bytes
-  Size/request:	184 bytes
-
-Response time histogram:
-  0.041 [1]	|■
-  0.189 [15]	|■■■■■■■■■
-  0.336 [15]	|■■■■■■■■■
-  0.484 [14]	|■■■■■■■■
-  0.632 [12]	|■■■■■■■
-  0.780 [12]	|■■■■■■■
-  0.928 [13]	|■■■■■■■■
-  1.075 [12]	|■■■■■■■
-  1.223 [66]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
-  1.371 [6]	|■■■■
-  1.519 [34]	|■■■■■■■■■■■■■■■■■■■■■
-
-
-Latency distribution:
-  10%% in 0.2573 secs
-  25%% in 0.5450 secs
-  50%% in 1.0915 secs
-  75%% in 1.1501 secs
-  90%% in 1.4307 secs
-  95%% in 1.4448 secs
-  99%% in 1.5023 secs
-
-Details (average, fastest, slowest):
-  DNS+dialup:	0.0057 secs, 0.0000 secs, 0.0217 secs
-  DNS-lookup:	0.0049 secs, 0.0000 secs, 0.0194 secs
-  req write:	0.0001 secs, 0.0000 secs, 0.0011 secs
-  resp wait:	0.8948 secs, 0.0401 secs, 1.5186 secs
-  resp read:	0.0002 secs, 0.0000 secs, 0.0085 secs
-
-Status code distribution:
-  [200]	200 responses
-
-
-
+  PASS: Rejected malicious ArtifactFilename
+[Hole 3] Compiler Flag Injection...
+  PASS: Rejected disallowed build flag
+[Hole 3] Run Flag Injection...
+  PASS: Rejected disallowed run flag
+[Hole 4] Request Size Limits...
+  PASS: Rejected large source
+  PASS: Rejected large stdin
+[Hole 6] Output Truncation Marker...
+  PASS: Truncation marker present
+[Hole 7] Network Isolation...
+  PASS: Network is isolated
+ALL SECURITY TESTS PASSED
+## 4. Make Integration (All 16)
+Running integration tests...
+bash tests/integration/run_all.sh http://localhost:8080
+Discovering registered languages...
+--- Integration Tests ---
+Testing py3...
+✅ py3: accepted
+Testing cpp...
+✅ cpp: accepted
+Testing bash...
+✅ bash: accepted
+Testing rust...
+✅ rust: accepted
+Testing java...
+✅ java: accepted
+Testing c...
+✅ c: accepted
+Testing js...
+✅ js: accepted
+Testing verilog...
+✅ verilog: accepted
+Testing go...
+✅ go: accepted
+Testing kotlin...
+✅ kotlin: accepted
+Testing csharp...
+✅ csharp: accepted
+Testing ruby...
+✅ ruby: accepted
+Testing lua...
+✅ lua: accepted
+Testing ocaml...
+✅ ocaml: accepted
+Testing swift...
+✅ swift: accepted
+Testing zig...
+✅ zig: accepted
+--- Integration tests completed! ---
 ## 5. Make Corpus (Full Run)
 bash tests/corpus/run_corpus.sh http://localhost:8080
 ==============================
@@ -422,3 +282,193 @@ bash tests/corpus/run_corpus.sh http://localhost:8080
 ==============================
  Results: 50/50 passed (0 skipped)
 [32m✅  ALL CORPUS TESTS PASSED[0m
+## 6. Make Load
+bash tests/load/load.sh http://localhost:8080
+--- Concurrency 1 ---
+
+Summary:
+  Total:	3.5997 secs
+  Slowest:	0.0459 secs
+  Fastest:	0.0151 secs
+  Average:	0.0180 secs
+  Requests/sec:	55.5603
+  
+  Total data:	36800 bytes
+  Size/request:	184 bytes
+
+Response time histogram:
+  0.015 [1]	|
+  0.018 [168]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  0.021 [17]	|■■■■
+  0.024 [4]	|■
+  0.027 [2]	|
+  0.031 [3]	|■
+  0.034 [1]	|
+  0.037 [0]	|
+  0.040 [2]	|
+  0.043 [0]	|
+  0.046 [2]	|
+
+
+Latency distribution:
+  10%% in 0.0159 secs
+  25%% in 0.0167 secs
+  50%% in 0.0171 secs
+  75%% in 0.0176 secs
+  90%% in 0.0192 secs
+  95%% in 0.0252 secs
+  99%% in 0.0448 secs
+
+Details (average, fastest, slowest):
+  DNS+dialup:	0.0000 secs, 0.0000 secs, 0.0004 secs
+  DNS-lookup:	0.0000 secs, 0.0000 secs, 0.0002 secs
+  req write:	0.0000 secs, 0.0000 secs, 0.0001 secs
+  resp wait:	0.0179 secs, 0.0150 secs, 0.0458 secs
+  resp read:	0.0001 secs, 0.0000 secs, 0.0003 secs
+
+Status code distribution:
+  [200]	200 responses
+
+
+
+--- Concurrency 10 ---
+
+Summary:
+  Total:	1.8085 secs
+  Slowest:	0.2024 secs
+  Fastest:	0.0216 secs
+  Average:	0.0869 secs
+  Requests/sec:	110.5917
+  
+  Total data:	36801 bytes
+  Size/request:	184 bytes
+
+Response time histogram:
+  0.022 [1]	|■
+  0.040 [6]	|■■■
+  0.058 [3]	|■■
+  0.076 [48]	|■■■■■■■■■■■■■■■■■■■■■■■■■■
+  0.094 [75]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  0.112 [43]	|■■■■■■■■■■■■■■■■■■■■■■■
+  0.130 [21]	|■■■■■■■■■■■
+  0.148 [2]	|■
+  0.166 [0]	|
+  0.184 [0]	|
+  0.202 [1]	|■
+
+
+Latency distribution:
+  10%% in 0.0646 secs
+  25%% in 0.0747 secs
+  50%% in 0.0842 secs
+  75%% in 0.1010 secs
+  90%% in 0.1159 secs
+  95%% in 0.1224 secs
+  99%% in 0.1370 secs
+
+Details (average, fastest, slowest):
+  DNS+dialup:	0.0000 secs, 0.0000 secs, 0.0009 secs
+  DNS-lookup:	0.0000 secs, 0.0000 secs, 0.0005 secs
+  req write:	0.0000 secs, 0.0000 secs, 0.0003 secs
+  resp wait:	0.0867 secs, 0.0209 secs, 0.2023 secs
+  resp read:	0.0001 secs, 0.0000 secs, 0.0021 secs
+
+Status code distribution:
+  [200]	200 responses
+
+
+
+--- Concurrency 50 ---
+
+Summary:
+  Total:	2.0756 secs
+  Slowest:	0.8649 secs
+  Fastest:	0.0372 secs
+  Average:	0.4691 secs
+  Requests/sec:	96.3557
+  
+  Total data:	36805 bytes
+  Size/request:	184 bytes
+
+Response time histogram:
+  0.037 [1]	|■
+  0.120 [10]	|■■■■■■
+  0.203 [10]	|■■■■■■
+  0.285 [9]	|■■■■■■
+  0.368 [30]	|■■■■■■■■■■■■■■■■■■
+  0.451 [65]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  0.534 [20]	|■■■■■■■■■■■■
+  0.617 [5]	|■■■
+  0.699 [2]	|■
+  0.782 [14]	|■■■■■■■■■
+  0.865 [34]	|■■■■■■■■■■■■■■■■■■■■■
+
+
+Latency distribution:
+  10%% in 0.2012 secs
+  25%% in 0.3553 secs
+  50%% in 0.4129 secs
+  75%% in 0.6623 secs
+  90%% in 0.8289 secs
+  95%% in 0.8448 secs
+  99%% in 0.8648 secs
+
+Details (average, fastest, slowest):
+  DNS+dialup:	0.0003 secs, 0.0000 secs, 0.0046 secs
+  DNS-lookup:	0.0002 secs, 0.0000 secs, 0.0020 secs
+  req write:	0.0001 secs, 0.0000 secs, 0.0019 secs
+  resp wait:	0.4686 secs, 0.0368 secs, 0.8647 secs
+  resp read:	0.0001 secs, 0.0000 secs, 0.0032 secs
+
+Status code distribution:
+  [200]	200 responses
+
+
+
+--- Concurrency 100 ---
+
+Summary:
+  Total:	1.7536 secs
+  Slowest:	0.9927 secs
+  Fastest:	0.0416 secs
+  Average:	0.6912 secs
+  Requests/sec:	114.0518
+  
+  Total data:	36800 bytes
+  Size/request:	184 bytes
+
+Response time histogram:
+  0.042 [1]	|■
+  0.137 [13]	|■■■■■■■■■
+  0.232 [10]	|■■■■■■■
+  0.327 [10]	|■■■■■■■
+  0.422 [11]	|■■■■■■■
+  0.517 [7]	|■■■■■
+  0.612 [9]	|■■■■■■
+  0.707 [13]	|■■■■■■■■■
+  0.803 [11]	|■■■■■■■
+  0.898 [59]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  0.993 [56]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+
+
+Latency distribution:
+  10%% in 0.1938 secs
+  25%% in 0.5085 secs
+  50%% in 0.8331 secs
+  75%% in 0.9123 secs
+  90%% in 0.9422 secs
+  95%% in 0.9509 secs
+  99%% in 0.9770 secs
+
+Details (average, fastest, slowest):
+  DNS+dialup:	0.0040 secs, 0.0000 secs, 0.0184 secs
+  DNS-lookup:	0.0012 secs, 0.0000 secs, 0.0041 secs
+  req write:	0.0017 secs, 0.0000 secs, 0.0081 secs
+  resp wait:	0.6853 secs, 0.0345 secs, 0.9924 secs
+  resp read:	0.0001 secs, 0.0000 secs, 0.0046 secs
+
+Status code distribution:
+  [200]	200 responses
+
+
+

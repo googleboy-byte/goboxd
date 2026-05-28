@@ -186,15 +186,15 @@ languages:
       cmd: ./{{artifact}}
       limits: { wall_time_s: 5, memory_kb: 262144, max_processes: 64, rlimit_as: 4096 }
 
-  # - id: zig
-  #   name: Zig
-  #   source_filename: solution.zig
-  #   artifact: solution
-  #   version_probe: /usr/local/bin/zig version
-  #   build:
-  #     cmd: /usr/bin/env
-  #     args: ["ZIG_GLOBAL_CACHE_DIR=/root/.cache/zig-cache", "/usr/local/bin/zig", "build-exe", "{{source}}", "-femit-bin={{artifact}}"]
-  #     limits: { wall_time_s: 30, memory_kb: 1048576, max_processes: 100 }
-  #   run:
-  #     cmd: ./{{artifact}}
-  #     limits: { wall_time_s: 5, memory_kb: 102400, max_processes: 64 }
+  - id: zig
+    name: Zig
+    source_filename: solution.zig
+    artifact: solution
+    version_probe: /usr/local/bin/zig version
+    build:
+      cmd: /usr/bin/env
+      args: ["ZIG_GLOBAL_CACHE_DIR=/root/.cache/zig-cache", "/usr/local/bin/zig", "build-exe", "{{source}}", "-femit-bin={{artifact}}"]
+      limits: { wall_time_s: 30, memory_kb: 1048576, max_processes: 100, rlimit_as: 4096 }
+    run:
+      cmd: ./{{artifact}}
+      limits: { wall_time_s: 5, memory_kb: 102400, max_processes: 64 }
