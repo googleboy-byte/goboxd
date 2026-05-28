@@ -7,7 +7,16 @@ VERSION=0.1.0
 COMMIT=$(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 LDFLAGS=-ldflags "-X main.version=$(VERSION) -X main.commit=$(COMMIT)"
 
-.PHONY: build run test integration load secure lint clean
+.PHONY: build run test integration load secure lint clean compose compose-down
+
+compose:
+	@echo "Bringing up services with Docker Compose..."
+	docker compose up -d --build
+	@echo "Server is starting at $(SERVER_URL)"
+
+compose-down:
+	@echo "Shutting down services..."
+	docker compose down
 
 secure:
 	@echo "Running security verification tests..."
