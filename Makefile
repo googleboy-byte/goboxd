@@ -33,7 +33,7 @@ run:
 	-docker kill $(BINARY) 2>/dev/null || true
 	-docker rm $(BINARY) 2>/dev/null || true
 	docker build -t $(IMAGE) .
-	docker run -d --privileged --cgroupns=host --name $(BINARY) -p 8080:8080 $(IMAGE)
+	docker run -d --privileged --cpus=2 --memory=2g --cgroupns=host --name $(BINARY) -p 8080:8080 $(IMAGE)
 	@echo "Server is starting at $(SERVER_URL)"
 
 test:

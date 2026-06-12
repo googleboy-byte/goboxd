@@ -1,3 +1,6 @@
+max_concurrent_jobs: 4
+queue_timeout_s: 10
+
 languages:
   - id: py3
     name: Python 3
@@ -55,12 +58,12 @@ languages:
     version_probe: /usr/bin/javac -version
     build:
       cmd: /usr/bin/javac
-      args: ["-J-Xmx512m", "-J-XX:-UseCompressedOops", "-J-XX:-UseCompressedClassPointers", "-d", ".", "{{source}}"]
-      limits: { wall_time_s: 15, memory_kb: 2097152, max_processes: 100, rlimit_as: 4096 }
+      args: ["-J-Xmx128m", "-J-XX:+UseSerialGC", "-J-XX:+TieredCompilation", "-J-XX:TieredStopAtLevel=1", "-g:none", "-d", ".", "{{source}}"]
+      limits: { wall_time_s: 10, memory_kb: 1048576, max_processes: 100, rlimit_as: 4096 }
     run:
       cmd: /usr/bin/java
-      args: ["-Xmx512m", "-XX:-UseCompressedOops", "-XX:-UseCompressedClassPointers", "-cp", ".", "{{artifact}}"]
-      limits: { wall_time_s: 15, memory_kb: 2097152, max_processes: 64, rlimit_as: 4096 }
+      args: ["-Xms160m", "-Xmx200m", "-XX:+UseSerialGC", "-XX:+TieredCompilation", "-XX:TieredStopAtLevel=1", "-cp", ".", "{{artifact}}"]
+      limits: { wall_time_s: 8, memory_kb: 524288, max_processes: 64, rlimit_as: 4096 }
 
   - id: c
     name: C
