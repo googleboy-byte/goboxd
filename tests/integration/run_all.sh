@@ -113,7 +113,7 @@ test_lang "swift" "print(\"hello\")" "accepted"
 test_lang "zig" 'const std = @import("std"); pub fn main() !void { try std.io.getStdOut().writer().writeAll("hello\n"); }' "accepted"
 
 # 17. TypeScript
-test_lang "ts" "console.log('hello')" "accepted"
+test_lang "typescript" "console.log('hello')" "accepted"
 
 # 18. Dart
 test_lang "dart" "void main() { print('hello'); }" "accepted"

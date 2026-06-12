@@ -7,7 +7,7 @@ VERSION=0.1.0
 COMMIT=$(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 LDFLAGS=-ldflags "-X main.version=$(VERSION) -X main.commit=$(COMMIT)"
 
-.PHONY: build run test integration load secure lint clean compose compose-down
+.PHONY: build run test integration corpus payloads load secure lint clean compose compose-down
 
 compose:
 	@echo "Bringing up services with Docker Compose..."
@@ -47,6 +47,10 @@ integration:
 
 corpus:
 	bash tests/corpus/run_corpus.sh $(SERVER_URL)
+
+payloads:
+	@chmod +x tests/corpus/run_payloads.sh
+	bash tests/corpus/run_payloads.sh $(SERVER_URL)
 
 load:
 	@curl -s -o /dev/null --connect-timeout 2 $(SERVER_URL)/healthz || (echo "Error: Server is not running. Run 'make run' first." && exit 1)

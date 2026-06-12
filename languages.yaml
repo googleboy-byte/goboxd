@@ -199,14 +199,14 @@ languages:
       cmd: ./{{artifact}}
       limits: { wall_time_s: 5, memory_kb: 102400, max_processes: 64 }
 
-  - id: ts
+  - id: typescript
     name: TypeScript
     source_filename: solution.ts
     artifact: solution.js
     version_probe: /usr/local/bin/tsc --version
     build:
       cmd: /usr/local/bin/tsc
-      args: ["--target", "ES2022", "--module", "commonjs", "{{source}}"]
+      args: ["--target", "ES2022", "--module", "commonjs", "--typeRoots", "/usr/local/lib/node_modules/@types", "--types", "node", "--skipLibCheck", "{{source}}"]
       limits: { wall_time_s: 10, memory_kb: 1048576, max_processes: 100, rlimit_as: 4096 }
     run:
       cmd: /usr/bin/node

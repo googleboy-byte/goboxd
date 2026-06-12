@@ -72,7 +72,7 @@ RUN wget -q https://storage.googleapis.com/dart-archive/channels/stable/release/
     && ln -sf /usr/local/dart-sdk/bin/dart /usr/local/bin/dart \
     && ln -sf /usr/local/dart-sdk/bin/dart /usr/bin/dart \
     && rm dartsdk-linux-x64-release.zip \
-    && npm install -g typescript \
+    && npm install -g typescript @types/node \
     && ln -sf /usr/local/bin/tsc /usr/bin/tsc
 
 COPY --from=nsjail-builder /nsjail-src/nsjail /usr/sbin/nsjail
