@@ -1,4 +1,4 @@
-max_concurrent_jobs: 4
+max_concurrent_jobs: 8
 queue_timeout_s: 10
 
 languages:
@@ -23,7 +23,7 @@ languages:
       cmd: /usr/bin/g++
       args: ["{{flags}}", "-o", "{{artifact}}", "{{source}}"]
       limits: { wall_time_s: 3, memory_kb: 1048576, max_processes: 100 }
-      flag_allowlist: ["-O0","-O1","-O2","-O3","-Wall","-Wextra","-std=*"]
+      flag_allowlist: ["-O0", "-O1", "-O2", "-O3", "-Wall", "-Wextra", "-std=*"]
     run:
       cmd: ./{{artifact}}
       limits: { wall_time_s: 3, memory_kb: 524288, max_processes: 64 }
@@ -36,7 +36,7 @@ languages:
       cmd: /usr/bin/bash
       args: ["{{source}}"]
       limits: { wall_time_s: 2, memory_kb: 51200, max_processes: 10 }
-  
+
   - id: rust
     name: Rust
     source_filename: solution.rs
@@ -58,12 +58,49 @@ languages:
     version_probe: /usr/bin/javac -version
     build:
       cmd: /usr/bin/javac
-      args: ["-J-Xmx128m", "-J-XX:+UseSerialGC", "-J-XX:+TieredCompilation", "-J-XX:TieredStopAtLevel=1", "-g:none", "-d", ".", "{{source}}"]
-      limits: { wall_time_s: 10, memory_kb: 1048576, max_processes: 100, rlimit_as: 4096 }
+      args:
+        [
+          "-J-Xms128m",
+          "-J-Xmx128m",
+          "-J-noverify",
+          "-J-XX:+UseSerialGC",
+          "-J-XX:+TieredCompilation",
+          "-J-XX:TieredStopAtLevel=1",
+          "-J-XX:CICompilerCount=1",
+          "-g:none",
+          "-d",
+          ".",
+          "{{source}}",
+        ]
+      limits:
+        {
+          wall_time_s: 10,
+          memory_kb: 1048576,
+          max_processes: 100,
+          rlimit_as: 4096,
+        }
     run:
       cmd: /usr/bin/java
-      args: ["-Xms160m", "-Xmx200m", "-XX:+UseSerialGC", "-XX:+TieredCompilation", "-XX:TieredStopAtLevel=1", "-cp", ".", "{{artifact}}"]
-      limits: { wall_time_s: 8, memory_kb: 524288, max_processes: 64, rlimit_as: 4096 }
+      args:
+        [
+          "-Xms160m",
+          "-Xmx200m",
+          "-XX:+UseSerialGC",
+          "-XX:+TieredCompilation",
+          "-XX:TieredStopAtLevel=1",
+          "-XX:CICompilerCount=1",
+          "-noverify",
+          "-cp",
+          ".",
+          "{{artifact}}",
+        ]
+      limits:
+        {
+          wall_time_s: 8,
+          memory_kb: 524288,
+          max_processes: 64,
+          rlimit_as: 4096,
+        }
 
   - id: c
     name: C
@@ -74,7 +111,7 @@ languages:
       cmd: /usr/bin/gcc
       args: ["{{flags}}", "-o", "{{artifact}}", "{{source}}"]
       limits: { wall_time_s: 3, memory_kb: 1048576, max_processes: 100 }
-      flag_allowlist: ["-O0","-O1","-O2","-O3","-Wall","-Wextra","-std=*"]
+      flag_allowlist: ["-O0", "-O1", "-O2", "-O3", "-Wall", "-Wextra", "-std=*"]
     run:
       cmd: ./{{artifact}}
       args: []
@@ -111,11 +148,34 @@ languages:
     version_probe: /usr/bin/go version
     build:
       cmd: /usr/bin/env
-      args: ["GO111MODULE=off", "CGO_ENABLED=0", "GOPATH=/tmp", "GOCACHE=/tmp/go-build", "go", "build", "-o", "{{artifact}}", "{{source}}"]
-      limits: { wall_time_s: 10, memory_kb: 1048576, max_processes: 100, rlimit_as: 4096 }
+      args:
+        [
+          "GO111MODULE=off",
+          "CGO_ENABLED=0",
+          "GOPATH=/tmp",
+          "GOCACHE=/tmp/go-build",
+          "go",
+          "build",
+          "-o",
+          "{{artifact}}",
+          "{{source}}",
+        ]
+      limits:
+        {
+          wall_time_s: 10,
+          memory_kb: 1048576,
+          max_processes: 100,
+          rlimit_as: 4096,
+        }
     run:
       cmd: ./{{artifact}}
-      limits: { wall_time_s: 5, memory_kb: 1048576, max_processes: 64, rlimit_as: 4096 }
+      limits:
+        {
+          wall_time_s: 5,
+          memory_kb: 1048576,
+          max_processes: 64,
+          rlimit_as: 4096,
+        }
 
   - id: kotlin
     name: Kotlin
@@ -125,11 +185,23 @@ languages:
     build:
       cmd: /usr/bin/kotlinc
       args: ["{{source}}", "-include-runtime", "-d", "{{artifact}}"]
-      limits: { wall_time_s: 20, memory_kb: 1048576, max_processes: 100, rlimit_as: 4096 }
+      limits:
+        {
+          wall_time_s: 20,
+          memory_kb: 1048576,
+          max_processes: 100,
+          rlimit_as: 4096,
+        }
     run:
       cmd: /usr/bin/java
       args: ["-jar", "{{artifact}}"]
-      limits: { wall_time_s: 5, memory_kb: 524288, max_processes: 64, rlimit_as: 4096 }
+      limits:
+        {
+          wall_time_s: 5,
+          memory_kb: 524288,
+          max_processes: 64,
+          rlimit_as: 4096,
+        }
 
   - id: csharp
     name: C# (Mono)
@@ -183,11 +255,35 @@ languages:
     version_probe: /usr/local/bin/swift --version
     build:
       cmd: /usr/bin/env
-      args: ["HOME=/tmp", "XDG_CACHE_HOME=/tmp", "/usr/local/bin/swiftc", "-module-cache-path", "/tmp/swift-cache", "-Xcc", "-fmodules-cache-path=/tmp/clang-cache", "{{source}}", "-o", "{{artifact}}"]
-      limits: { wall_time_s: 15, memory_kb: 1048576, max_processes: 100, rlimit_as: 4096 }
+      args:
+        [
+          "HOME=/tmp",
+          "XDG_CACHE_HOME=/tmp",
+          "/usr/local/bin/swiftc",
+          "-module-cache-path",
+          "/tmp/swift-cache",
+          "-Xcc",
+          "-fmodules-cache-path=/tmp/clang-cache",
+          "{{source}}",
+          "-o",
+          "{{artifact}}",
+        ]
+      limits:
+        {
+          wall_time_s: 15,
+          memory_kb: 1048576,
+          max_processes: 100,
+          rlimit_as: 4096,
+        }
     run:
       cmd: ./{{artifact}}
-      limits: { wall_time_s: 5, memory_kb: 262144, max_processes: 64, rlimit_as: 4096 }
+      limits:
+        {
+          wall_time_s: 5,
+          memory_kb: 262144,
+          max_processes: 64,
+          rlimit_as: 4096,
+        }
 
   - id: zig
     name: Zig
@@ -196,8 +292,21 @@ languages:
     version_probe: /usr/local/bin/zig version
     build:
       cmd: /usr/bin/env
-      args: ["ZIG_GLOBAL_CACHE_DIR=/root/.cache/zig-cache", "/usr/local/bin/zig", "build-exe", "{{source}}", "-femit-bin={{artifact}}"]
-      limits: { wall_time_s: 30, memory_kb: 1048576, max_processes: 100, rlimit_as: 4096 }
+      args:
+        [
+          "ZIG_GLOBAL_CACHE_DIR=/root/.cache/zig-cache",
+          "/usr/local/bin/zig",
+          "build-exe",
+          "{{source}}",
+          "-femit-bin={{artifact}}",
+        ]
+      limits:
+        {
+          wall_time_s: 30,
+          memory_kb: 1048576,
+          max_processes: 100,
+          rlimit_as: 4096,
+        }
     run:
       cmd: ./{{artifact}}
       limits: { wall_time_s: 5, memory_kb: 102400, max_processes: 64 }
@@ -209,8 +318,26 @@ languages:
     version_probe: /usr/local/bin/tsc --version
     build:
       cmd: /usr/local/bin/tsc
-      args: ["--target", "ES2022", "--module", "commonjs", "--typeRoots", "/usr/local/lib/node_modules/@types", "--types", "node", "--skipLibCheck", "{{source}}"]
-      limits: { wall_time_s: 10, memory_kb: 1048576, max_processes: 100, rlimit_as: 4096 }
+      args:
+        [
+          "--target",
+          "ES2022",
+          "--module",
+          "commonjs",
+          "--typeRoots",
+          "/usr/local/lib/node_modules/@types",
+          "--types",
+          "node",
+          "--skipLibCheck",
+          "{{source}}",
+        ]
+      limits:
+        {
+          wall_time_s: 10,
+          memory_kb: 1048576,
+          max_processes: 100,
+          rlimit_as: 4096,
+        }
     run:
       cmd: /usr/bin/node
       args: ["{{artifact}}"]
@@ -224,10 +351,22 @@ languages:
     build:
       cmd: /usr/local/bin/dart
       args: ["compile", "exe", "{{source}}", "-o", "{{artifact}}"]
-      limits: { wall_time_s: 15, memory_kb: 1048576, max_processes: 100, rlimit_as: 4096 }
+      limits:
+        {
+          wall_time_s: 15,
+          memory_kb: 1048576,
+          max_processes: 100,
+          rlimit_as: 4096,
+        }
     run:
       cmd: ./{{artifact}}
-      limits: { wall_time_s: 5, memory_kb: 262144, max_processes: 64, rlimit_as: 4096 }
+      limits:
+        {
+          wall_time_s: 5,
+          memory_kb: 262144,
+          max_processes: 64,
+          rlimit_as: 4096,
+        }
 
   - id: fortran
     name: Fortran
