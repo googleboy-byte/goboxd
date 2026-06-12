@@ -198,3 +198,44 @@ languages:
     run:
       cmd: ./{{artifact}}
       limits: { wall_time_s: 5, memory_kb: 102400, max_processes: 64 }
+
+  - id: ts
+    name: TypeScript
+    source_filename: solution.ts
+    artifact: solution.js
+    version_probe: /usr/local/bin/tsc --version
+    build:
+      cmd: /usr/local/bin/tsc
+      args: ["--target", "ES2022", "--module", "commonjs", "{{source}}"]
+      limits: { wall_time_s: 10, memory_kb: 1048576, max_processes: 100, rlimit_as: 4096 }
+    run:
+      cmd: /usr/bin/node
+      args: ["{{artifact}}"]
+      limits: { wall_time_s: 5, memory_kb: 524288, max_processes: 64 }
+
+  - id: dart
+    name: Dart
+    source_filename: solution.dart
+    artifact: solution
+    version_probe: /usr/local/bin/dart --version
+    build:
+      cmd: /usr/local/bin/dart
+      args: ["compile", "exe", "{{source}}", "-o", "{{artifact}}"]
+      limits: { wall_time_s: 15, memory_kb: 1048576, max_processes: 100, rlimit_as: 4096 }
+    run:
+      cmd: ./{{artifact}}
+      limits: { wall_time_s: 5, memory_kb: 262144, max_processes: 64, rlimit_as: 4096 }
+
+  - id: fortran
+    name: Fortran
+    source_filename: solution.f90
+    artifact: solution
+    version_probe: /usr/bin/gfortran --version
+    build:
+      cmd: /usr/bin/gfortran
+      args: ["{{flags}}", "-o", "{{artifact}}", "{{source}}"]
+      limits: { wall_time_s: 5, memory_kb: 524288, max_processes: 100 }
+      flag_allowlist: ["-O0", "-O1", "-O2", "-O3", "-Wall", "-Wextra", "-std=*"]
+    run:
+      cmd: ./{{artifact}}
+      limits: { wall_time_s: 3, memory_kb: 102400, max_processes: 64 }

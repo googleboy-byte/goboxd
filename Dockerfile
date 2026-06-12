@@ -35,13 +35,16 @@ RUN apt-get update && apt-get install -y \
     curl \
     g++ \
     gcc \
+    gfortran \
     iverilog \
     libcap2 \
     libnl-route-3-200 \
     libprotobuf32 \
     nodejs \
+    npm \
     openjdk-17-jdk-headless \
     python3 \
+    unzip \
     wget \
     xz-utils \
 # Bonus languages (commented out for Stage 2)
@@ -62,6 +65,15 @@ RUN wget -q https://ziglang.org/download/0.13.0/zig-linux-x86_64-0.13.0.tar.xz \
     && tar -xJf zig-linux-x86_64-0.13.0.tar.xz -C /usr/local \
     && ln -sf /usr/local/zig-linux-x86_64-0.13.0/zig /usr/local/bin/zig \
     && rm zig-linux-x86_64-0.13.0.tar.xz
+
+# Install Dart SDK and TypeScript
+RUN wget -q https://storage.googleapis.com/dart-archive/channels/stable/release/3.4.4/sdk/dartsdk-linux-x64-release.zip \
+    && unzip -q dartsdk-linux-x64-release.zip -d /usr/local \
+    && ln -sf /usr/local/dart-sdk/bin/dart /usr/local/bin/dart \
+    && ln -sf /usr/local/dart-sdk/bin/dart /usr/bin/dart \
+    && rm dartsdk-linux-x64-release.zip \
+    && npm install -g typescript \
+    && ln -sf /usr/local/bin/tsc /usr/bin/tsc
 
 COPY --from=nsjail-builder /nsjail-src/nsjail /usr/sbin/nsjail
 COPY --from=builder /build/goboxd /usr/local/bin/goboxd

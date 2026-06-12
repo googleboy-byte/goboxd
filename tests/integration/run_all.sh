@@ -112,4 +112,13 @@ test_lang "swift" "print(\"hello\")" "accepted"
 # 16. Zig
 test_lang "zig" 'const std = @import("std"); pub fn main() !void { try std.io.getStdOut().writer().writeAll("hello\n"); }' "accepted"
 
+# 17. TypeScript
+test_lang "ts" "console.log('hello')" "accepted"
+
+# 18. Dart
+test_lang "dart" "void main() { print('hello'); }" "accepted"
+
+# 19. Fortran
+test_lang "fortran" $'program hello\n  write(*, \'(A)\') "hello"\nend program hello' "accepted"
+
 echo "--- Integration tests completed! ---"
